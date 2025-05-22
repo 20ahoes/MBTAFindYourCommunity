@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Attribute Table Viewer</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 2em; }
+    table { border-collapse: collapse; width: 100%; }
+    th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
+    th { background-color: #f2f2f2; }
+  </style>
+</head>
+<body>
+  <h2>Selected Feature Attributes</h2>
+  <div id="table-container">Loading...</div>
+
+  <script>
+    const urlParams = new URLSearchParams(window.location.search);
+    const objectid = urlParams.get('objectid');
+
+    const featureServiceURL = 'https://services6.arcgis.com/euKKjtGUuDiy24vy/arcgis/rest/services/MunicipalitiesByCommunityType/FeatureServer;
+
+    async function fetchAttributes() {
+      if (!objectid) {
+        document.getElementById('table-container').innerText = 'No object ID provided.';
+        return;
+      }
+
+      const queryURL = `${featureServiceURL}/query?where=OBJECTID=${objectid}&outFields=*&f=json`;
+
+      try {
+        const response = await fetch(queryURL);
+        const data = await response.json();
+
+        if (data.features.length === 0) {
+          document.getElementById('table-container').innerText = 'Feature not found.';
+          return;
+        }
+
+        const attributes = data.features[0].attributes;
+        let tableHTML = '<table><tr><th>Field</th><th>Value</th></tr>';
+
+        for (const key in attributes) {
+          tableHTML += `<tr><td>${key}</td><td>${attributes[key]}</td></tr>`;
+        }
+
+        tableHTML += '</table>';
+        document.getElementById('table-container').innerHTML = tableHTML;
+
+      } catch (error) {
+        console.error(error);
+        document.getElementById('table-container').innerText = 'Error fetching data.';
+      }
+    }
+
+    fetchAttributes();
+  </script>
+</body>
+</html>
