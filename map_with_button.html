@@ -133,8 +133,10 @@
         });
       });
 
-      // 🔍 Handle external search using queryRenderedFeatures
+      // 🔍 Handle external search
       window.addEventListener("message", function(event) {
+        console.log("📥 Received postMessage:", event.data);
+
         if (event.data?.type === 'search-town') {
           const searchName = event.data.name.trim().toLowerCase();
 
