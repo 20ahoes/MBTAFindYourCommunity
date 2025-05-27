@@ -130,8 +130,11 @@
         if (event.data?.type === 'search-town') {
           const searchName = event.data.name.trim().toLowerCase();
 
-          const features = map.queryRenderedFeatures({ layers: [layerId] });
-          console.log("🔎 Matching against features:", features.length);
+          const features = map.querySourceFeatures('composite', {
+            sourceLayer: sourceLayer
+          });
+
+          console.log(`🔎 Found ${features.length} features in source layer.`);
 
           const match = features.find(f =>
             f.properties?.[nameField]?.toLowerCase() === searchName
