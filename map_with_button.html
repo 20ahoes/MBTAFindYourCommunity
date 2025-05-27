@@ -2,15 +2,16 @@
 <html>
 <head>
   <meta charset="utf-8">
-  <title>Map + Toggle Button</title>
+  <title>Map + Toggle & Home Button</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  
-  <!-- Load Roboto Bold -->
+
+  <!-- Fonts: Roboto Bold + Material Icons -->
   <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
 
   <script src="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.js"></script>
   <link href="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.css" rel="stylesheet" />
-  
+
   <style>
     body, html {
       margin: 0;
@@ -40,9 +41,14 @@
       pointer-events: none;
     }
 
-    #toggleMapboxLayer {
+    .button-container {
+      display: flex;
+      gap: 12px;
       pointer-events: auto;
-      padding: 10px 20px;
+    }
+
+    .map-button {
+      padding: 10px 16px;
       font-size: 16px;
       font-weight: 700;
       background-color: rgba(255, 255, 255, 0.9);
@@ -53,50 +59,78 @@
       box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
       backdrop-filter: blur(4px);
       transition: background-color 0.2s ease;
+      display: flex;
+      align-items: center;
+      gap: 6px;
     }
 
-    #toggleMapboxLayer:hover {
+    .map-button:hover {
       background-color: rgba(255, 255, 255, 1);
+    }
+
+    .material-icons {
+      font-size: 20px;
     }
   </style>
 </head>
 <body>
   <div class="top-bar">
-    <button id="toggleMapboxLayer">Toggle Municipalities Layer</button>
+    <div class="button-container">
+      <button id="toggleMapboxLayer" class="map-button">
+        Toggle Layer
+      </button>
+      <button id="resetView" class="map-button">
+        <span class="material-icons">home</span>
+        Home
+      </button>
+    </div>
   </div>
+
   <div id="map"></div>
 
   <script>
     mapboxgl.accessToken = 'pk.eyJ1IjoiMjBhaG9lcyIsImEiOiJjbWFwazQxbDgwaXMzMmxwbzJmNmhidm0yIn0.NileAvzC_m2asZI3tLIqUw';
 
+    const defaultCenter = [-71.245, 42.254];
+    const defaultZoom = 8.0;
+
     const map = new mapboxgl.Map({
       container: 'map',
       style: 'mapbox://styles/20ahoes/cmb6rnzqp00rs01sddsqq9xtx',
-      center: [-71.245, 42.254],
-      zoom: 8.0
+      center: defaultCenter,
+      zoom: defaultZoom,
+      minZoom: defaultZoom,
+      maxZoom: 22
     });
 
-    const layerId = 'municipalitiesbycommunitytype-c8ks3h copy';
+    const targetLayerId = 'municipalitiesbycommunitytype-c8ks3h copy';
 
-    function toggleLayer() {
-      if (!map.getLayer(layerId)) {
-        console.error(`❌ Layer "${layerId}" not found`);
+    map.on('load', () => {
+      const fillLayer = map.getStyle().layers.find(
+        l => l.id === targetLayerId && l.type === 'fill'
+      );
+
+      if (!fillLayer) {
+        console.error("❌ Fill layer not found");
         return;
       }
 
-      const current = map.getLayoutProperty(layerId, 'visibility') || 'visible';
-      const newVis = current === 'none' ? 'visible' : 'none';
-      map.setLayoutProperty(layerId, 'visibility', newVis);
-      console.log(`🔄 Layer "${layerId}" toggled to ${newVis}`);
-    }
-
-    document.getElementById('toggleMapboxLayer').addEventListener('click', toggleLayer);
-
-    map.on('load', () => {
-      console.log("✅ Map loaded. Available layers:");
-      map.getStyle().layers.forEach(layer => {
-        console.log(`• ${layer.id}`);
+      document.getElementById('toggleMapboxLayer').addEventListener('click', () => {
+        const current = map.getLayoutProperty(fillLayer.id, 'visibility') || 'visible';
+        const newVis = current === 'none' ? 'visible' : 'none';
+        map.setLayoutProperty(fillLayer.id, 'visibility', newVis);
+        console.log(`🔄 Layer "${fillLayer.id}" toggled to ${newVis}`);
       });
+
+      document.getElementById('resetView').addEventListener('click', () => {
+        map.flyTo({
+          center: defaultCenter,
+          zoom: defaultZoom,
+          speed: 1.2
+        });
+      });
+
+      console.log("✅ Map loaded. Ready.");
     });
   </script>
 </body>
