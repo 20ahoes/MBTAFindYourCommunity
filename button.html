@@ -20,7 +20,7 @@
 
   <script>
     document.getElementById('toggleMapboxLayer').addEventListener('click', function () {
-      // Send the message to all iframes in the top-level window
+      console.log("📤 Sending postMessage to map iframe");
       window.top.postMessage({
         type: 'toggle-layer',
         layerId: 'mbta-municipalities-by-compli-5gbi66'
