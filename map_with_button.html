@@ -4,15 +4,10 @@
   <meta charset="utf-8">
   <title>Map with Toggle, Home & Search</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-
-  <!-- Fonts -->
   <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@700&display=swap" rel="stylesheet">
   <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
-
-  <!-- Mapbox -->
   <script src="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.js"></script>
   <link href="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.css" rel="stylesheet" />
-
   <style>
     body, html {
       margin: 0;
@@ -20,14 +15,12 @@
       height: 100%;
       font-family: 'Roboto', sans-serif;
     }
-
     #map {
       position: absolute;
       top: 0;
       bottom: 0;
       width: 100%;
     }
-
     .top-bar {
       position: absolute;
       top: 0;
@@ -41,7 +34,6 @@
       z-index: 1;
       pointer-events: none;
     }
-
     #toggleMapboxLayer {
       pointer-events: auto;
       padding: 10px 20px;
@@ -55,11 +47,9 @@
       box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
       backdrop-filter: blur(4px);
     }
-
     #toggleMapboxLayer:hover {
       background-color: rgba(255, 255, 255, 1);
     }
-
     #homeButton {
       position: absolute;
       top: 10px;
@@ -74,23 +64,22 @@
       box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
       backdrop-filter: blur(4px);
     }
-
     #homeButton:hover {
       background-color: rgba(255, 255, 255, 1);
     }
-
     .material-icons {
       font-size: 24px;
     }
   </style>
 </head>
 <body>
+
   <!-- Home Button -->
   <button id="homeButton" title="Return to Default View">
     <span class="material-icons">home</span>
   </button>
 
-  <!-- Centered Toggle Button -->
+  <!-- Toggle Button -->
   <div class="top-bar">
     <button id="toggleMapboxLayer">Toggle Municipalities Layer</button>
   </div>
@@ -104,6 +93,8 @@
     const defaultCenter = [-71.245, 42.254];
     const defaultZoom = 8.0;
     const layerId = 'municipalitiesbycommunitytype-c8ks3h copy';
+    const sourceLayerId = 'MunicipalitiesByCommunityType-c8ks3h copy';
+    const nameField = 'Municipali';
 
     const bounds = [
       [-72.5, 41.5],
@@ -121,16 +112,10 @@
     });
 
     map.on('load', () => {
-      setTimeout(() => {
-        map.setMaxBounds(bounds);
-      }, 500);
-
-      const fillLayer = map.getStyle().layers.find(
-        l => l.id === layerId && l.type === 'fill'
-      );
-
+      // Toggle layer visibility
+      const fillLayer = map.getStyle().layers.find(l => l.id === layerId && l.type === 'fill');
       if (!fillLayer) {
-        console.error("❌ Fill layer not found");
+        console.error("❌ Fill layer not found.");
         return;
       }
 
@@ -141,6 +126,7 @@
         console.log(`🔄 Layer "${fillLayer.id}" toggled to ${newVis}`);
       });
 
+      // Home button
       document.getElementById('homeButton').addEventListener('click', () => {
         map.flyTo({
           center: defaultCenter,
@@ -149,67 +135,70 @@
           essential: true
         });
       });
-    });
 
-    // 🔍 Handle external search using queryRenderedFeatures
-    window.addEventListener("message", function(event) {
-      if (event.data?.type === 'search-town') {
-        const searchName = event.data.name.trim().toLowerCase();
+      // Search listener
+      window.addEventListener("message", function(event) {
+        if (event.data?.type === 'search-town') {
+          const searchName = event.data.name.trim().toLowerCase();
 
-        const renderedFeatures = map.queryRenderedFeatures({
-          layers: ['municipalitiesbycommunitytype-c8ks3h copy']
-        });
-
-        const match = renderedFeatures.find(f =>
-          f.properties?.['data0k5Yh1']?.toLowerCase() === searchName
-        );
-
-        if (match) {
-          const bounds = new mapboxgl.LngLatBounds();
-          match.geometry.coordinates[0].forEach(coord => bounds.extend(coord));
-          map.fitBounds(bounds, { padding: 40 });
-
-          const props = match.properties;
-          alert(`📍 ${props['data0k5Yh1']}\nCommunity Type: ${props['data0k5Y_1'] ?? 'N/A'}`);
-
-          if (!map.getSource('highlight-town')) {
-            map.addSource('highlight-town', {
-              type: 'geojson',
-              data: {
-                type: 'FeatureCollection',
-                features: []
-              }
-            });
-
-            map.addLayer({
-              id: 'highlight-town-fill',
-              type: 'fill',
-              source: 'highlight-town',
-              paint: {
-                'fill-color': '#FFEB3B',
-                'fill-opacity': 0.5
-              }
-            });
-
-            map.addLayer({
-              id: 'highlight-town-outline',
-              type: 'line',
-              source: 'highlight-town',
-              paint: {
-                'line-color': '#FF9800',
-                'line-width': 2
-              }
-            });
-          }
-
-          map.getSource('highlight-town').setData({
-            type: 'FeatureCollection',
-            features: [match.toJSON()]
+          const allFeatures = map.querySourceFeatures('composite', {
+            sourceLayer: sourceLayerId
           });
-        } else {
-          alert("❌ Town not found.");
+
+          const match = allFeatures.find(f =>
+            f.properties?.[nameField]?.toLowerCase() === searchName
+          );
+
+          if (match) {
+            const coords = match.geometry.coordinates[0];
+            const bounds = new mapboxgl.LngLatBounds();
+            coords.forEach(coord => bounds.extend(coord));
+            map.fitBounds(bounds, { padding: 40 });
+
+            const props = match.properties;
+            alert(`📍 ${props[nameField]}\nCommunity Type: ${props[nameField]}`);
+
+            // Add highlight layer if not present
+            if (!map.getSource('highlight-town')) {
+              map.addSource('highlight-town', {
+                type: 'geojson',
+                data: {
+                  type: 'FeatureCollection',
+                  features: []
+                }
+              });
+
+              map.addLayer({
+                id: 'highlight-town-fill',
+                type: 'fill',
+                source: 'highlight-town',
+                paint: {
+                  'fill-color': '#FFEB3B',
+                  'fill-opacity': 0.5
+                }
+              });
+
+              map.addLayer({
+                id: 'highlight-town-outline',
+                type: 'line',
+                source: 'highlight-town',
+                paint: {
+                  'line-color': '#FF9800',
+                  'line-width': 2
+                }
+              });
+            }
+
+            // Set the highlight feature
+            map.getSource('highlight-town').setData({
+              type: 'FeatureCollection',
+              features: [match.toJSON()]
+            });
+          } else {
+            alert("❌ Town not found.");
+          }
         }
-      }
+      });
     });
   </script>
 </body>
