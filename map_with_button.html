@@ -8,7 +8,6 @@
   <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
   <script src="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.js"></script>
   <link href="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.css" rel="stylesheet" />
-
   <style>
     body, html {
       margin: 0;
@@ -35,7 +34,7 @@
       z-index: 1;
       pointer-events: none;
     }
-    #toggleMapboxLayer {
+    #toggleMapboxLayer, #clearHighlightButton {
       pointer-events: auto;
       padding: 10px 20px;
       font-size: 16px;
@@ -47,6 +46,7 @@
       cursor: pointer;
       box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
       backdrop-filter: blur(4px);
+      margin: 0 5px;
     }
     #homeButton {
       position: absolute;
@@ -74,6 +74,7 @@
 
   <div class="top-bar">
     <button id="toggleMapboxLayer">Toggle Municipalities Layer</button>
+    <button id="clearHighlightButton">Clear</button>
   </div>
 
   <div id="map"></div>
@@ -84,9 +85,8 @@
     const defaultCenter = [-71.245, 42.254];
     const defaultZoom = 8.0;
     const layerId = 'municipalitiesbycommunitytype-c8ks3h copy';
-    const sourceLayer = 'MunicipalitiesByCommunityType-c8ks3h';
+    const sourceLayer = 'MunicipalitiesByCommunityType-c8ks3h copy';
     const nameField = 'Municipali';
-
     const bounds = [[-72.5, 41.5], [-69.5, 43.0]];
 
     const map = new mapboxgl.Map({
@@ -98,6 +98,8 @@
       maxZoom: 22,
       maxBounds: bounds
     });
+
+    let currentTown = null;
 
     map.on('load', () => {
       const fillLayer = map.getStyle().layers.find(l => l.id === layerId && l.type === 'fill');
@@ -115,12 +117,12 @@
       });
 
       document.getElementById('homeButton').addEventListener('click', () => {
-        map.flyTo({
-          center: defaultCenter,
-          zoom: defaultZoom,
-          speed: 1.2,
-          essential: true
-        });
+        map.flyTo({ center: defaultCenter, zoom: defaultZoom, speed: 1.2, essential: true });
+      });
+
+      document.getElementById('clearHighlightButton').addEventListener('click', () => {
+        map.setPaintProperty(layerId, 'fill-color', '#ccc');
+        currentTown = null;
       });
 
       window.addEventListener("message", function(event) {
@@ -128,45 +130,50 @@
 
         if (event.data?.type === 'search-town') {
           const searchName = event.data.name.trim().toLowerCase();
+          const features = map.queryRenderedFeatures({ layers: [layerId] });
 
-          const features = map.querySourceFeatures('composite', {
-            sourceLayer: sourceLayer
-          });
-
-          console.log(`🔎 Found ${features.length} features in source layer.`);
-
-          const match = features.find(f =>
-            f.properties?.[nameField]?.toLowerCase() === searchName
-          );
+          const match = features.find(f => f.properties?.[nameField]?.toLowerCase() === searchName);
 
           if (match) {
-            const props = match.properties;
-            const geometry = match.geometry;
+            currentTown = match.properties[nameField];
 
             const bounds = new mapboxgl.LngLatBounds();
-            const flattenCoords = (coords) => {
-              return geometry.type === 'MultiPolygon'
-                ? coords.flat(2)
-                : coords[0];
-            };
+            const coordinates = match.geometry.type === 'MultiPolygon'
+              ? match.geometry.coordinates[0][0]
+              : match.geometry.coordinates[0];
 
-            flattenCoords(geometry.coordinates).forEach(coord => {
-              bounds.extend(coord);
-            });
-
+            coordinates.forEach(coord => bounds.extend(coord));
             map.fitBounds(bounds, { padding: 40, duration: 1000 });
 
             map.setPaintProperty(layerId, 'fill-color', [
               'case',
-              ['==', ['get', nameField], props[nameField]],
-              '#f00',
-              '#ccc'
+              ['==', ['get', nameField], match.properties[nameField]],
+              '#f00', '#ccc'
             ]);
-
-            alert(`📍 ${props[nameField]}`);
           } else {
             alert("❌ Town not found.");
           }
+        }
+      });
+
+      map.on('click', layerId, function(e) {
+        if (e.features.length > 0) {
+          const match = e.features[0];
+          currentTown = match.properties[nameField];
+
+          const bounds = new mapboxgl.LngLatBounds();
+          const coordinates = match.geometry.type === 'MultiPolygon'
+            ? match.geometry.coordinates[0][0]
+            : match.geometry.coordinates[0];
+
+          coordinates.forEach(coord => bounds.extend(coord));
+          map.fitBounds(bounds, { padding: 40, duration: 1000 });
+
+          map.setPaintProperty(layerId, 'fill-color', [
+            'case',
+            ['==', ['get', nameField], match.properties[nameField]],
+            '#f00', '#ccc'
+          ]);
         }
       });
     });
