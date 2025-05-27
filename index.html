@@ -24,10 +24,10 @@
   <div id="map"></div>
 
   <script>
-    // Set your access token
+    // Set Mapbox access token
     mapboxgl.accessToken = 'pk.eyJ1IjoiMjBhaG9lcyIsImEiOiJjbWFwazQxbDgwaXMzMmxwbzJmNmhidm0yIn0.NileAvzC_m2asZI3tLIqUw';
 
-    // Create the map
+    // Initialize the map
     const map = new mapboxgl.Map({
       container: 'map',
       style: 'mapbox://styles/20ahoes/cmb6rnzqp00rs01sddsqq9xtx',
@@ -35,31 +35,37 @@
       zoom: 8.8
     });
 
+    // Replace this with your final confirmed layer ID after logging output
     const layerId = 'MBTA_Municipalities_by_Compli-5gbi66';
 
-    // Wait for the layer to load before setting visibility or adding listeners
-    function trySetInitialVisibility() {
-      if (!map.getLayer(layerId)) {
-        console.log('Layer not ready yet, retrying...');
-        return setTimeout(trySetInitialVisibility, 300);
+    map.on('load', () => {
+      console.log("🔍 Available Mapbox Layer IDs:");
+      const layers = map.getStyle().layers;
+      layers.forEach(layer => {
+        console.log(`• ${layer.id}`);
+      });
+
+      function trySetInitialVisibility() {
+        if (!map.getLayer(layerId)) {
+          console.log(`⛔ Layer "${layerId}" not found yet, retrying...`);
+          return setTimeout(trySetInitialVisibility, 300);
+        }
+
+        map.setLayoutProperty(layerId, 'visibility', 'none');
+        console.log(`✅ Layer "${layerId}" found and hidden on load.`);
+
+        window.addEventListener('message', function(event) {
+          if (event.data?.type === 'toggle-layer' && event.data.layerId === layerId) {
+            const currentVisibility = map.getLayoutProperty(layerId, 'visibility');
+            const newVisibility = currentVisibility === 'none' ? 'visible' : 'none';
+            map.setLayoutProperty(layerId, 'visibility', newVisibility);
+            console.log(`🔄 Layer "${layerId}" toggled to ${newVisibility}`);
+          }
+        });
       }
 
-      // Hide the layer on load
-      map.setLayoutProperty(layerId, 'visibility', 'none');
-      console.log(`Layer "${layerId}" found and hidden on load.`);
-
-      // Listen for messages from parent page (like Experience Builder)
-      window.addEventListener('message', function(event) {
-        if (event.data?.type === 'toggle-layer' && event.data.layerId === layerId) {
-          const currentVisibility = map.getLayoutProperty(layerId, 'visibility');
-          const newVisibility = currentVisibility === 'none' ? 'visible' : 'none';
-          map.setLayoutProperty(layerId, 'visibility', newVisibility);
-          console.log(`Layer "${layerId}" toggled to ${newVisibility}`);
-        }
-      });
-    }
-
-    map.on('load', trySetInitialVisibility);
+      trySetInitialVisibility();
+    });
   </script>
 </body>
 </html>
