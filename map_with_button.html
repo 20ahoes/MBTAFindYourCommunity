@@ -165,7 +165,7 @@
         });
 
         const match = features.find(f =>
-          f.properties?.['data@ak5Yh1']?.toLowerCase() === searchName
+          f.properties?.['data0k5Yh1']?.toLowerCase() === searchName
         );
 
         if (match) {
@@ -174,7 +174,7 @@
           map.fitBounds(bounds, { padding: 40 });
 
           const props = match.properties;
-          alert(`📍 ${props['data0ak5Yh1']}\nCommunity Type: ${props['data0k5Y_1'] ?? 'N/A'}`);
+          alert(`📍 ${props['data0k5Yh1']}\nCommunity Type: ${props['data0k5Yh1'] ?? 'N/A'}`);
         } else {
           alert("❌ Town not found.");
         }
