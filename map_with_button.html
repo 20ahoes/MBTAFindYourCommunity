@@ -123,7 +123,6 @@
         });
       });
 
-      // 🔍 Listen for search-town messages
       window.addEventListener("message", function(event) {
         console.log("📥 Received message:", event.data);
 
@@ -141,18 +140,30 @@
           );
 
           if (match) {
+            const props = match.properties;
+            const geometry = match.geometry;
+
             const bounds = new mapboxgl.LngLatBounds();
-            match.geometry.coordinates[0].forEach(coord => bounds.extend(coord));
-            map.fitBounds(bounds, { padding: 40 });
+            const flattenCoords = (coords) => {
+              return geometry.type === 'MultiPolygon'
+                ? coords.flat(2)
+                : coords[0];
+            };
+
+            flattenCoords(geometry.coordinates).forEach(coord => {
+              bounds.extend(coord);
+            });
+
+            map.fitBounds(bounds, { padding: 40, duration: 1000 });
 
             map.setPaintProperty(layerId, 'fill-color', [
               'case',
-              ['==', ['get', nameField], match.properties[nameField]],
+              ['==', ['get', nameField], props[nameField]],
               '#f00',
               '#ccc'
             ]);
 
-            alert(`📍 ${match.properties[nameField]}`);
+            alert(`📍 ${props[nameField]}`);
           } else {
             alert("❌ Town not found.");
           }
