@@ -93,8 +93,7 @@
     const defaultCenter = [-71.245, 42.254];
     const defaultZoom = 8.0;
     const layerId = 'municipalitiesbycommunitytype-c8ks3h copy';
-    const sourceLayerId = 'MunicipalitiesByCommunityType-c8ks3h copy';
-    const nameField = 'Municipali';
+    const nameField = 'data0k5Yh1';
 
     const bounds = [
       [-72.5, 41.5],
@@ -112,7 +111,6 @@
     });
 
     map.on('load', () => {
-      // Toggle layer visibility
       const fillLayer = map.getStyle().layers.find(l => l.id === layerId && l.type === 'fill');
       if (!fillLayer) {
         console.error("❌ Fill layer not found.");
@@ -126,7 +124,6 @@
         console.log(`🔄 Layer "${fillLayer.id}" toggled to ${newVis}`);
       });
 
-      // Home button
       document.getElementById('homeButton').addEventListener('click', () => {
         map.flyTo({
           center: defaultCenter,
@@ -136,16 +133,16 @@
         });
       });
 
-      // Search listener
+      // 🔍 Handle external search using queryRenderedFeatures
       window.addEventListener("message", function(event) {
         if (event.data?.type === 'search-town') {
           const searchName = event.data.name.trim().toLowerCase();
 
-          const allFeatures = map.querySourceFeatures('composite', {
-            sourceLayer: sourceLayerId
+          const renderedFeatures = map.queryRenderedFeatures({
+            layers: [layerId]
           });
 
-          const match = allFeatures.find(f =>
+          const match = renderedFeatures.find(f =>
             f.properties?.[nameField]?.toLowerCase() === searchName
           );
 
@@ -158,7 +155,6 @@
             const props = match.properties;
             alert(`📍 ${props[nameField]}\nCommunity Type: ${props[nameField]}`);
 
-            // Add highlight layer if not present
             if (!map.getSource('highlight-town')) {
               map.addSource('highlight-town', {
                 type: 'geojson',
@@ -189,7 +185,6 @@
               });
             }
 
-            // Set the highlight feature
             map.getSource('highlight-town').setData({
               type: 'FeatureCollection',
               features: [match.toJSON()]
