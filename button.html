@@ -1,10 +1,11 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <meta charset="utf-8" />
-  <title>Toggle Button</title>
+  <meta charset="utf-8">
+  <title>Toggle Mapbox Layer</title>
 </head>
 <body style="margin: 10px; font-family: sans-serif;">
+
   <button id="toggleMapboxLayer" style="
     padding: 10px 20px;
     font-size: 16px;
@@ -25,8 +26,11 @@
           type: 'toggle-layer',
           layerId: 'mbta-municipalities-by-compl-5gbl66'
         }, '*');
+      } else {
+        console.warn("Mapbox iframe not found.");
       }
     });
   </script>
+
 </body>
 </html>
