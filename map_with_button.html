@@ -125,7 +125,7 @@
     map.on('load', () => {
       setTimeout(() => {
         map.setMaxBounds(bounds);
-      }, 500); // delay for iframe rendering
+      }, 500);
 
       const fillLayer = map.getStyle().layers.find(
         l => l.id === layerId && l.type === 'fill'
@@ -136,7 +136,6 @@
         return;
       }
 
-      // Toggle visibility
       document.getElementById('toggleMapboxLayer').addEventListener('click', () => {
         const current = map.getLayoutProperty(fillLayer.id, 'visibility') || 'visible';
         const newVis = current === 'none' ? 'visible' : 'none';
@@ -144,7 +143,6 @@
         console.log(`🔄 Layer "${fillLayer.id}" toggled to ${newVis}`);
       });
 
-      // Home reset
       document.getElementById('homeButton').addEventListener('click', () => {
         map.flyTo({
           center: defaultCenter,
@@ -155,7 +153,7 @@
       });
     });
 
-    // 🔍 Handle external search
+    // 🔍 Handle external search + highlight
     window.addEventListener("message", function(event) {
       if (event.data?.type === 'search-town') {
         const searchName = event.data.name.trim().toLowerCase();
@@ -174,7 +172,50 @@
           map.fitBounds(bounds, { padding: 40 });
 
           const props = match.properties;
-          alert(`📍 ${props['data0k5Yh1']}\nCommunity Type: ${props['data0k5Yh1'] ?? 'N/A'}`);
+          alert(`📍 ${props['data0k5Yh1']}\nCommunity Type: ${props['data0k5Y_1'] ?? 'N/A'}`);
+
+          // Remove existing highlight
+          if (map.getSource('highlight-town')) {
+            map.getSource('highlight-town').setData({
+              type: 'FeatureCollection',
+              features: []
+            });
+          }
+
+          if (!map.getSource('highlight-town')) {
+            map.addSource('highlight-town', {
+              type: 'geojson',
+              data: {
+                type: 'FeatureCollection',
+                features: []
+              }
+            });
+
+            map.addLayer({
+              id: 'highlight-town-fill',
+              type: 'fill',
+              source: 'highlight-town',
+              paint: {
+                'fill-color': '#FFEB3B',
+                'fill-opacity': 0.5
+              }
+            });
+
+            map.addLayer({
+              id: 'highlight-town-outline',
+              type: 'line',
+              source: 'highlight-town',
+              paint: {
+                'line-color': '#FF9800',
+                'line-width': 2
+              }
+            });
+          }
+
+          map.getSource('highlight-town').setData({
+            type: 'FeatureCollection',
+            features: [match.toJSON()]
+          });
         } else {
           alert("❌ Town not found.");
         }
