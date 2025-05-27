@@ -24,33 +24,42 @@
   <div id="map"></div>
 
   <script>
-    // Your access token
+    // Set your access token
     mapboxgl.accessToken = 'pk.eyJ1IjoiMjBhaG9lcyIsImEiOiJjbWFwazQxbDgwaXMzMmxwbzJmNmhidm0yIn0.NileAvzC_m2asZI3tLIqUw';
 
+    // Create the map
     const map = new mapboxgl.Map({
       container: 'map',
       style: 'mapbox://styles/20ahoes/cmb6rnzqp00rs01sddsqq9xtx',
-      center: [-71.245, 42.254],  // Your preferred center (longitude, latitude)
+      center: [-71.245, 42.254],
       zoom: 8.8
     });
 
-    map.on('load', () => {
-      const layerId = 'mbta-municipalities-by-compl-5gbl66';
+    const layerId = 'mbta-municipalities-by-compl-5gbl66';
 
-      // Optional: hide the layer by default on load
-      if (map.getLayer(layerId)) {
-        map.setLayoutProperty(layerId, 'visibility', 'none');
+    // Wait for the layer to load before setting visibility or adding listeners
+    function trySetInitialVisibility() {
+      if (!map.getLayer(layerId)) {
+        console.log('Layer not ready yet, retrying...');
+        return setTimeout(trySetInitialVisibility, 300);
       }
 
-      // Listen for postMessage from parent (Experience Builder)
+      // Hide the layer on load
+      map.setLayoutProperty(layerId, 'visibility', 'none');
+      console.log(`Layer "${layerId}" found and hidden on load.`);
+
+      // Listen for messages from parent page (like Experience Builder)
       window.addEventListener('message', function(event) {
         if (event.data?.type === 'toggle-layer' && event.data.layerId === layerId) {
           const currentVisibility = map.getLayoutProperty(layerId, 'visibility');
           const newVisibility = currentVisibility === 'none' ? 'visible' : 'none';
           map.setLayoutProperty(layerId, 'visibility', newVisibility);
+          console.log(`Layer "${layerId}" toggled to ${newVisibility}`);
         }
       });
-    });
+    }
+
+    map.on('load', trySetInitialVisibility);
   </script>
 </body>
 </html>
