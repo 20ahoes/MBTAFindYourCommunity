@@ -2,7 +2,7 @@
 <html>
 <head>
   <meta charset="utf-8" />
-  <title>Mapbox Embed Widget</title>
+  <title>Mapbox Embedded Map</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <script src="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.js"></script>
   <link href="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.css" rel="stylesheet" />
@@ -19,12 +19,21 @@
     const map = new mapboxgl.Map({
       container: 'map',
       style: 'mapbox://styles/20ahoes/cmb6rnzqp00rs01sddsqq9xtx',
-      center: [-71.245, 42.254],  // Your preferred coordinates (lng, lat)
+      center: [-71.245, 42.254],  // Your preferred center
       zoom: 8.8                   // Your preferred zoom
     });
 
     map.on('load', () => {
-      // Optional: Add interactive layer behavior here
+      // Listen for toggle-layer message from parent
+      window.addEventListener('message', function(event) {
+        if (event.data && event.data.type === 'toggle-layer') {
+          const layerId = event.data.layerId;
+          const currentVisibility = map.getLayoutProperty(layerId, 'visibility');
+          map.setLayoutProperty(layerId, 'visibility',
+            currentVisibility === 'none' ? 'visible' : 'none'
+          );
+        }
+      });
     });
   </script>
 </body>
