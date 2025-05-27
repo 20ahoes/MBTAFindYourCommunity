@@ -4,14 +4,19 @@
   <meta charset="utf-8">
   <title>Map + Toggle Button</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
+  
+  <!-- ✅ Load Roboto Bold from Google Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@700&display=swap" rel="stylesheet">
+
   <script src="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.js"></script>
   <link href="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.css" rel="stylesheet" />
+  
   <style>
     body, html {
       margin: 0;
       padding: 0;
       height: 100%;
-      font-family: sans-serif;
+      font-family: 'Roboto', sans-serif;
     }
 
     #map {
@@ -32,13 +37,14 @@
       align-items: center;
       background: linear-gradient(to bottom, rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0));
       z-index: 1;
-      pointer-events: none; /* Allow clicks to go through except for button */
+      pointer-events: none;
     }
 
     #toggleMapboxLayer {
-      pointer-events: auto; /* Make the button clickable inside a pointer-blocking parent */
+      pointer-events: auto;
       padding: 10px 20px;
       font-size: 16px;
+      font-weight: 700; /* ✅ Roboto Bold */
       background-color: rgba(255, 255, 255, 0.9);
       color: #005e95;
       border: none;
