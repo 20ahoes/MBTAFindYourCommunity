@@ -24,10 +24,8 @@
   <div id="map"></div>
 
   <script>
-    // Set Mapbox access token
     mapboxgl.accessToken = 'pk.eyJ1IjoiMjBhaG9lcyIsImEiOiJjbWFwazQxbDgwaXMzMmxwbzJmNmhidm0yIn0.NileAvzC_m2asZI3tLIqUw';
 
-    // Initialize the map
     const map = new mapboxgl.Map({
       container: 'map',
       style: 'mapbox://styles/20ahoes/cmb6rnzqp00rs01sddsqq9xtx',
@@ -35,7 +33,6 @@
       zoom: 8.8
     });
 
-    // Replace this with your final confirmed layer ID after logging output
     const layerId = 'mbta-municipalities-by-compli-5gbi66';
 
     map.on('load', () => {
@@ -45,26 +42,28 @@
         console.log(`• ${layer.id}`);
       });
 
-      function trySetInitialVisibility() {
+      function waitForLayer() {
         if (!map.getLayer(layerId)) {
-          console.log(`⛔ Layer "${layerId}" not found yet, retrying...`);
-          return setTimeout(trySetInitialVisibility, 300);
+          console.log(`⛔ Layer "${layerId}" not ready, retrying...`);
+          return setTimeout(waitForLayer, 300);
         }
 
-        map.setLayoutProperty(layerId, 'visibility', 'none');
-        console.log(`✅ Layer "${layerId}" found and hidden on load.`);
+        console.log(`✅ Layer "${layerId}" found and ready.`);
 
         window.addEventListener('message', function(event) {
-          if (event.data?.type === 'toggle-layer' && event.data.layerId === layerId) {
-            const currentVisibility = map.getLayoutProperty(layerId, 'visibility');
-            const newVisibility = currentVisibility === 'none' ? 'visible' : 'none';
-            map.setLayoutProperty(layerId, 'visibility', newVisibility);
-            console.log(`🔄 Layer "${layerId}" toggled to ${newVisibility}`);
+          if (event.data?.type === 'toggle-layer') {
+            console.log(`📨 Received message: ${JSON.stringify(event.data)}`);
+            if (event.data.layerId === layerId) {
+              const current = map.getLayoutProperty(layerId, 'visibility') || 'visible';
+              const newVis = current === 'none' ? 'visible' : 'none';
+              map.setLayoutProperty(layerId, 'visibility', newVis);
+              console.log(`🔄 Layer "${layerId}" toggled to ${newVis}`);
+            }
           }
         });
       }
 
-      trySetInitialVisibility();
+      waitForLayer();
     });
   </script>
 </body>
