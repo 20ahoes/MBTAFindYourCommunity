@@ -2,32 +2,58 @@
 <html>
 <head>
   <meta charset="utf-8">
-  <title>Search Town Widget</title>
+  <title>Search Town</title>
   <style>
     body {
-      font-family: Roboto, sans-serif;
-      margin: 10px;
+      font-family: 'Roboto', sans-serif;
+      margin: 20px;
     }
 
-    input, button {
+    input[type="text"] {
+      padding: 10px;
       font-size: 16px;
-      padding: 6px 10px;
-      margin-right: 6px;
+      border-radius: 5px;
+      border: 1px solid #ccc;
+      width: 200px;
+    }
+
+    button {
+      padding: 10px 16px;
+      margin-left: 10px;
+      font-size: 16px;
+      background-color: #005e95;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background-color: #003f63;
     }
   </style>
 </head>
 <body>
-  <input type="text" id="townName" placeholder="Enter town name..." />
-  <button onclick="sendTown()">Search</button>
+
+  <h3>Search Your Town</h3>
+  <input type="text" id="townInput" placeholder="Enter town name" />
+  <button onclick="searchTown()">Search</button>
 
   <script>
-    function sendTown() {
-      const town = document.getElementById("townName").value.trim().toLowerCase();
-      window.parent.postMessage({
-        type: 'search-town',
-        name: town
-      }, '*');
-      console.log("📤 Sent search-town:", town);
+    function searchTown() {
+      const townName = document.getElementById('townInput').value.trim();
+      if (!townName) return;
+
+      const iframe = parent.document.getElementById('mapboxFrame');
+      if (iframe && iframe.contentWindow) {
+        iframe.contentWindow.postMessage({
+          type: 'search-town',
+          name: townName
+        }, 'https://20ahoes.github.io');  // ✅ Your GitHub Pages domain
+        console.log("📤 Sent search-town:", townName);
+      } else {
+        console.warn("❌ mapboxFrame iframe not found.");
+      }
     }
   </script>
 </body>
