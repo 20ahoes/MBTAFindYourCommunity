@@ -20,11 +20,11 @@
 
   <script>
     document.getElementById('toggleMapboxLayer').addEventListener('click', function () {
-      // Send a postMessage to any listening iframes in the parent window
-      window.parent.postMessage({
+      // Send the message to all iframes in the top-level window
+      window.top.postMessage({
         type: 'toggle-layer',
         layerId: 'mbta-municipalities-by-compl-5gbl66'
-      }, '*'); // targetOrigin can be restricted to your GitHub domain if needed
+      }, '*');
     });
   </script>
 
