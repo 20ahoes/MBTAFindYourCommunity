@@ -5,7 +5,7 @@
   <title>Map + Toggle Button</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   
-  <!-- ✅ Load Roboto Bold from Google Fonts -->
+  <!-- Load Roboto Bold -->
   <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@700&display=swap" rel="stylesheet">
 
   <script src="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.js"></script>
@@ -44,7 +44,7 @@
       pointer-events: auto;
       padding: 10px 20px;
       font-size: 16px;
-      font-weight: 700; /* ✅ Roboto Bold */
+      font-weight: 700;
       background-color: rgba(255, 255, 255, 0.9);
       color: #005e95;
       border: none;
@@ -79,6 +79,11 @@
     const layerId = 'municipalitiesbycommunitytype-c8ks3h';
 
     function toggleLayer() {
+      if (!map.getLayer(layerId)) {
+        console.error(`❌ Layer "${layerId}" not found`);
+        return;
+      }
+
       const current = map.getLayoutProperty(layerId, 'visibility') || 'visible';
       const newVis = current === 'none' ? 'visible' : 'none';
       map.setLayoutProperty(layerId, 'visibility', newVis);
@@ -88,9 +93,10 @@
     document.getElementById('toggleMapboxLayer').addEventListener('click', toggleLayer);
 
     map.on('load', () => {
-      console.log("🔍 Loaded layers:");
-      const layers = map.getStyle().layers;
-      layers.forEach(layer => console.log(`• ${layer.id}`));
+      console.log("✅ Map loaded. Available layers:");
+      map.getStyle().layers.forEach(layer => {
+        console.log(`• ${layer.id}`);
+      });
     });
   </script>
 </body>
