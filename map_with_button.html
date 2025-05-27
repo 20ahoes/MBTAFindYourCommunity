@@ -2,13 +2,14 @@
 <html>
 <head>
   <meta charset="utf-8">
-  <title>Map with Toggle & Home Button</title>
+  <title>Map with Toggle, Home & Search</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
 
-  <!-- Roboto + Material Icons -->
+  <!-- Fonts -->
   <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@700&display=swap" rel="stylesheet">
   <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
 
+  <!-- Mapbox -->
   <script src="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.js"></script>
   <link href="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.css" rel="stylesheet" />
 
@@ -27,7 +28,7 @@
       width: 100%;
     }
 
-    /* Top center gradient bar */
+    /* Top-center toggle button bar */
     .top-bar {
       position: absolute;
       top: 0;
@@ -60,7 +61,7 @@
       background-color: rgba(255, 255, 255, 1);
     }
 
-    /* Home button in top left */
+    /* Top-left home icon */
     #homeButton {
       position: absolute;
       top: 10px;
@@ -86,16 +87,17 @@
   </style>
 </head>
 <body>
-  <!-- Home icon-only button -->
+  <!-- Home Button -->
   <button id="homeButton" title="Return to Default View">
     <span class="material-icons">home</span>
   </button>
 
-  <!-- Centered toggle button bar -->
+  <!-- Centered Toggle Button -->
   <div class="top-bar">
     <button id="toggleMapboxLayer">Toggle Municipalities Layer</button>
   </div>
 
+  <!-- Map -->
   <div id="map"></div>
 
   <script>
@@ -103,11 +105,11 @@
 
     const defaultCenter = [-71.245, 42.254];
     const defaultZoom = 8.0;
+    const layerId = 'municipalitiesbycommunitytype-c8ks3h copy';
 
-    // Define panning boundaries (adjust to match your actual map frame area)
     const bounds = [
-      [-72.5, 41.5], // Southwest corner
-      [-69.5, 43.0]  // Northeast corner
+      [-72.5, 41.5],
+      [-69.5, 43.0]
     ];
 
     const map = new mapboxgl.Map({
@@ -117,12 +119,14 @@
       zoom: defaultZoom,
       minZoom: defaultZoom,
       maxZoom: 22,
-      maxBounds: bounds // 🔒 Lock to these bounds
+      maxBounds: bounds
     });
 
-    const layerId = 'municipalitiesbycommunitytype-c8ks3h copy';
-
     map.on('load', () => {
+      setTimeout(() => {
+        map.setMaxBounds(bounds);
+      }, 500); // delay for iframe rendering
+
       const fillLayer = map.getStyle().layers.find(
         l => l.id === layerId && l.type === 'fill'
       );
@@ -132,6 +136,7 @@
         return;
       }
 
+      // Toggle visibility
       document.getElementById('toggleMapboxLayer').addEventListener('click', () => {
         const current = map.getLayoutProperty(fillLayer.id, 'visibility') || 'visible';
         const newVis = current === 'none' ? 'visible' : 'none';
@@ -139,6 +144,7 @@
         console.log(`🔄 Layer "${fillLayer.id}" toggled to ${newVis}`);
       });
 
+      // Home reset
       document.getElementById('homeButton').addEventListener('click', () => {
         map.flyTo({
           center: defaultCenter,
@@ -147,6 +153,32 @@
           essential: true
         });
       });
+    });
+
+    // 🔍 Handle external search
+    window.addEventListener("message", function(event) {
+      if (event.data?.type === 'search-town') {
+        const searchName = event.data.name.trim().toLowerCase();
+
+        const features = map.querySourceFeatures('composite', {
+          sourceLayer: 'MunicipalitiesByCommunityType-c8ks3h'
+        });
+
+        const match = features.find(f =>
+          f.properties?.['data@ak5Yh1']?.toLowerCase() === searchName
+        );
+
+        if (match) {
+          const bounds = new mapboxgl.LngLatBounds();
+          match.geometry.coordinates[0].forEach(coord => bounds.extend(coord));
+          map.fitBounds(bounds, { padding: 40 });
+
+          const props = match.properties;
+          alert(`📍 ${props['data0ak5Yh1']}\nCommunity Type: ${props['data0k5Y_1'] ?? 'N/A'}`);
+        } else {
+          alert("❌ Town not found.");
+        }
+      }
     });
   </script>
 </body>
