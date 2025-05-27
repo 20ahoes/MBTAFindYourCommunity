@@ -13,29 +13,51 @@
       height: 100%;
       font-family: sans-serif;
     }
+
     #map {
       position: absolute;
-      top: 50px;
+      top: 0;
       bottom: 0;
       width: 100%;
     }
-    #toggleMapboxLayer {
+
+    .top-bar {
       position: absolute;
-      top: 10px;
-      left: 10px;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 60px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      background: linear-gradient(to bottom, rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0));
       z-index: 1;
+      pointer-events: none; /* Allow clicks to go through except for button */
+    }
+
+    #toggleMapboxLayer {
+      pointer-events: auto; /* Make the button clickable inside a pointer-blocking parent */
       padding: 10px 20px;
       font-size: 16px;
-      background-color: #005e95;
-      color: white;
+      background-color: rgba(255, 255, 255, 0.9);
+      color: #005e95;
       border: none;
-      border-radius: 4px;
+      border-radius: 8px;
       cursor: pointer;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+      backdrop-filter: blur(4px);
+      transition: background-color 0.2s ease;
+    }
+
+    #toggleMapboxLayer:hover {
+      background-color: rgba(255, 255, 255, 1);
     }
   </style>
 </head>
 <body>
-  <button id="toggleMapboxLayer">Toggle Municipalities Layer</button>
+  <div class="top-bar">
+    <button id="toggleMapboxLayer">Toggle Municipalities Layer</button>
+  </div>
   <div id="map"></div>
 
   <script>
@@ -45,7 +67,7 @@
       container: 'map',
       style: 'mapbox://styles/20ahoes/cmb6rnzqp00rs01sddsqq9xtx',
       center: [-71.245, 42.254],
-      zoom: 6.8
+      zoom: 8.8
     });
 
     const layerId = 'mbta-municipalities-by-compli-5gbi66';
