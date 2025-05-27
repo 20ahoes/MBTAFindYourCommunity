@@ -7,31 +7,47 @@
   <script src="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.js"></script>
   <link href="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.css" rel="stylesheet" />
   <style>
-    body, html { margin: 0; padding: 0; height: 100%; }
-    #map { position: absolute; top: 0; bottom: 0; width: 100%; }
+    body, html {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+    }
+    #map {
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      width: 100%;
+    }
   </style>
 </head>
 <body>
   <div id="map"></div>
+
   <script>
+    // Your access token
     mapboxgl.accessToken = 'pk.eyJ1IjoiMjBhaG9lcyIsImEiOiJjbWFwazQxbDgwaXMzMmxwbzJmNmhidm0yIn0.NileAvzC_m2asZI3tLIqUw';
 
     const map = new mapboxgl.Map({
       container: 'map',
       style: 'mapbox://styles/20ahoes/cmb6rnzqp00rs01sddsqq9xtx',
-      center: [-71.245, 42.254],  // Your preferred center
-      zoom: 8.8                   // Your preferred zoom
+      center: [-71.245, 42.254],  // Your preferred center (longitude, latitude)
+      zoom: 8.8
     });
 
     map.on('load', () => {
-      // Listen for toggle-layer message from parent
+      const layerId = 'MBTA_Municipalities_by_Compl-5gbl66';
+
+      // Optional: hide the layer by default on load
+      if (map.getLayer(layerId)) {
+        map.setLayoutProperty(layerId, 'visibility', 'none');
+      }
+
+      // Listen for postMessage from parent (Experience Builder)
       window.addEventListener('message', function(event) {
-        if (event.data && event.data.type === 'toggle-layer') {
-          const layerId = event.data.layerId;
+        if (event.data?.type === 'toggle-layer' && event.data.layerId === layerId) {
           const currentVisibility = map.getLayoutProperty(layerId, 'visibility');
-          map.setLayoutProperty(layerId, 'visibility',
-            currentVisibility === 'none' ? 'visible' : 'none'
-          );
+          const newVisibility = currentVisibility === 'none' ? 'visible' : 'none';
+          map.setLayoutProperty(layerId, 'visibility', newVisibility);
         }
       });
     });
