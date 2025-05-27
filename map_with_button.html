@@ -27,6 +27,7 @@
       width: 100%;
     }
 
+    /* 🔘 Centered gradient bar with toggle button */
     .top-bar {
       position: absolute;
       top: 0;
@@ -41,14 +42,9 @@
       pointer-events: none;
     }
 
-    .button-container {
-      display: flex;
-      gap: 12px;
+    #toggleMapboxLayer {
       pointer-events: auto;
-    }
-
-    .map-button {
-      padding: 10px 16px;
+      padding: 10px 20px;
       font-size: 16px;
       font-weight: 700;
       background-color: rgba(255, 255, 255, 0.9);
@@ -59,12 +55,32 @@
       box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
       backdrop-filter: blur(4px);
       transition: background-color 0.2s ease;
-      display: flex;
-      align-items: center;
-      gap: 6px;
     }
 
-    .map-button:hover {
+    #toggleMapboxLayer:hover {
+      background-color: rgba(255, 255, 255, 1);
+    }
+
+    /* 🏠 Top-left home button */
+    #homeButton {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      z-index: 2;
+      padding: 10px;
+      background-color: rgba(255, 255, 255, 0.9);
+      color: #005e95;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+      backdrop-filter: blur(4px);
+      transition: background-color 0.2s ease;
+      display: flex;
+      align-items: center;
+    }
+
+    #homeButton:hover {
       background-color: rgba(255, 255, 255, 1);
     }
 
@@ -74,18 +90,17 @@
   </style>
 </head>
 <body>
+  <!-- 🏠 Home Button -->
+  <button id="homeButton" title="Return to Default View">
+    <span class="material-icons">home</span>
+  </button>
+
+  <!-- 🔘 Centered Gradient Toggle Bar -->
   <div class="top-bar">
-    <div class="button-container">
-      <button id="toggleMapboxLayer" class="map-button">
-        Toggle Layer
-      </button>
-      <button id="resetView" class="map-button">
-        <span class="material-icons">home</span>
-        Home
-      </button>
-    </div>
+    <button id="toggleMapboxLayer">Toggle Municipalities Layer</button>
   </div>
 
+  <!-- 🗺️ Map Container -->
   <div id="map"></div>
 
   <script>
@@ -103,11 +118,11 @@
       maxZoom: 22
     });
 
-    const targetLayerId = 'municipalitiesbycommunitytype-c8ks3h copy';
+    const layerId = 'municipalitiesbycommunitytype-c8ks3h copy';
 
     map.on('load', () => {
       const fillLayer = map.getStyle().layers.find(
-        l => l.id === targetLayerId && l.type === 'fill'
+        l => l.id === layerId && l.type === 'fill'
       );
 
       if (!fillLayer) {
@@ -122,15 +137,13 @@
         console.log(`🔄 Layer "${fillLayer.id}" toggled to ${newVis}`);
       });
 
-      document.getElementById('resetView').addEventListener('click', () => {
+      document.getElementById('homeButton').addEventListener('click', () => {
         map.flyTo({
           center: defaultCenter,
           zoom: defaultZoom,
           speed: 1.2
         });
       });
-
-      console.log("✅ Map loaded. Ready.");
     });
   </script>
 </body>
