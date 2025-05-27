@@ -44,19 +44,16 @@
       const townName = document.getElementById('townInput').value.trim();
       if (!townName) return;
 
-      // Try to find the iframe with the map by its URL
-      const mapFrame = Array.from(parent.document.getElementsByTagName("iframe")).find(
-        iframe => iframe.src.includes("MBTAFindYourCommunity/map_with_button.html")
-      );
-
-      if (mapFrame && mapFrame.contentWindow) {
-        mapFrame.contentWindow.postMessage({
+      try {
+        // Send directly to parent (cross-origin safe)
+        window.parent.postMessage({
           type: 'search-town',
           name: townName
-        }, 'https://20ahoes.github.io');
+        }, '*');
+
         console.log("📤 Sent search-town:", townName);
-      } else {
-        console.warn("❌ Map iframe not found or not ready.");
+      } catch (err) {
+        console.warn("❌ Could not postMessage to parent:", err);
       }
     }
   </script>
