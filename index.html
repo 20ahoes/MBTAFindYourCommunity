@@ -1,59 +1,31 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <meta charset="UTF-8">
-  <title>Attribute Table Viewer</title>
+  <meta charset="utf-8" />
+  <title>Mapbox Embed Widget</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <script src="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.js"></script>
+  <link href="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.css" rel="stylesheet" />
   <style>
-    body { font-family: Arial, sans-serif; margin: 2em; }
-    table { border-collapse: collapse; width: 100%; }
-    th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
-    th { background-color: #f2f2f2; }
+    body, html { margin: 0; padding: 0; height: 100%; }
+    #map { position: absolute; top: 0; bottom: 0; width: 100%; }
   </style>
 </head>
 <body>
-  <h2>Selected Feature Attributes</h2>
-  <div id="table-container">Loading...</div>
-
+  <div id="map"></div>
   <script>
-    const urlParams = new URLSearchParams(window.location.search);
-    const objectid = urlParams.get('Municipality');
+    mapboxgl.accessToken = 'pk.eyJ1IjoiMjBhaG9lcyIsImEiOiJjbWFwazQxbDgwaXMzMmxwbzJmNmhidm0yIn0.NileAvzC_m2asZI3tLIqUw';
 
-    const featureServiceURL = 'https://services6.arcgis.com/euKKjtGUuDiy24vy/arcgis/rest/services/MunicipalitiesByCommunityType/FeatureServer;
+    const map = new mapboxgl.Map({
+      container: 'map',
+      style: 'mapbox://styles/20ahoes/cmb6rnzqp00rs01sddsqq9xtx',
+      center: [-71.0589, 42.3601], // Example: Boston
+      zoom: 10
+    });
 
-    async function fetchAttributes() {
-      if (!objectid) {
-        document.getElementById('table-container').innerText = 'No object ID provided.';
-        return;
-      }
-
-      const queryURL = `${featureServiceURL}/query?where=OBJECTID=${objectid}&outFields=*&f=json`;
-
-      try {
-        const response = await fetch(queryURL);
-        const data = await response.json();
-
-        if (data.features.length === 0) {
-          document.getElementById('table-container').innerText = 'Feature not found.';
-          return;
-        }
-
-        const attributes = data.features[0].attributes;
-        let tableHTML = '<table><tr><th>Field</th><th>Value</th></tr>';
-
-        for (const key in attributes) {
-          tableHTML += `<tr><td>${key}</td><td>${attributes[key]}</td></tr>`;
-        }
-
-        tableHTML += '</table>';
-        document.getElementById('table-container').innerHTML = tableHTML;
-
-      } catch (error) {
-        console.error(error);
-        document.getElementById('table-container').innerText = 'Error fetching data.';
-      }
-    }
-
-    fetchAttributes();
+    map.on('load', () => {
+      // Optional: Add interactive layer behavior here
+    });
   </script>
 </body>
 </html>
