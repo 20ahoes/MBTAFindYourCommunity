@@ -1,61 +1,62 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <meta charset="utf-8">
-  <title>Search Town</title>
+  <meta charset="UTF-8" />
+  <title>Search Your Town</title>
   <style>
     body {
-      font-family: 'Roboto', sans-serif;
-      margin: 20px;
+      font-family: Arial, sans-serif;
+      padding: 20px;
     }
-
-    input[type="text"] {
-      padding: 10px;
+    #townInput {
+      padding: 8px;
       font-size: 16px;
-      border-radius: 5px;
-      border: 1px solid #ccc;
-      width: 200px;
+      width: 220px;
     }
-
-    button {
-      padding: 10px 16px;
-      margin-left: 10px;
+    #searchButton {
+      padding: 8px 14px;
       font-size: 16px;
       background-color: #005e95;
       color: white;
       border: none;
-      border-radius: 5px;
+      border-radius: 4px;
       cursor: pointer;
     }
-
-    button:hover {
-      background-color: #003f63;
+    iframe {
+      margin-top: 20px;
+      width: 100%;
+      height: 600px;
+      border: 1px solid #ccc;
     }
   </style>
 </head>
 <body>
 
-  <h3>Search Your Town</h3>
+  <h2>Search Your Town</h2>
+
   <input type="text" id="townInput" placeholder="Enter town name" />
-  <button onclick="searchTown()">Search</button>
+  <button id="searchButton">Search</button>
+
+  <iframe
+    id="mapboxFrame"
+    src="https://20ahoes.github.io/MBTAFindYourCommunity/map_with_button.html?force=1"
+  ></iframe>
 
   <script>
-    function searchTown() {
-      const townName = document.getElementById('townInput').value.trim();
-      if (!townName) return;
+    document.getElementById("searchButton").addEventListener("click", function () {
+      const town = document.getElementById("townInput").value.trim();
+      const iframe = document.getElementById("mapboxFrame");
 
-      try {
-        // Send directly to parent (cross-origin safe)
-        window.parent.postMessage({
-          type: 'search-town',
-          name: townName
-        }, '*');
-
-        console.log("📤 Sent search-town:", townName);
-      } catch (err) {
-        console.warn("❌ Could not postMessage to parent:", err);
+      if (town && iframe && iframe.contentWindow) {
+        console.log("📤 Sending search-town:", town);
+        iframe.contentWindow.postMessage({
+          type: "search-town",
+          name: town
+        }, "*");
+      } else {
+        console.warn("❌ Missing input or iframe.");
       }
-    }
+    });
   </script>
 
 </body>
