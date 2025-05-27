@@ -20,15 +20,11 @@
 
   <script>
     document.getElementById('toggleMapboxLayer').addEventListener('click', function () {
-      const iframe = parent.document.getElementById('mapboxFrame');
-      if (iframe && iframe.contentWindow) {
-        iframe.contentWindow.postMessage({
-          type: 'toggle-layer',
-          layerId: 'mbta-municipalities-by-compl-5gbl66'
-        }, '*');
-      } else {
-        console.warn("Mapbox iframe not found.");
-      }
+      // Send a postMessage to any listening iframes in the parent window
+      window.parent.postMessage({
+        type: 'toggle-layer',
+        layerId: 'mbta-municipalities-by-compl-5gbl66'
+      }, '*'); // targetOrigin can be restricted to your GitHub domain if needed
     });
   </script>
 
