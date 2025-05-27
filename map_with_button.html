@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Map + Toggle Button</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <script src="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.js"></script>
+  <link href="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.css" rel="stylesheet" />
+  <style>
+    body, html {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+      font-family: sans-serif;
+    }
+    #map {
+      position: absolute;
+      top: 50px;
+      bottom: 0;
+      width: 100%;
+    }
+    #toggleMapboxLayer {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      z-index: 1;
+      padding: 10px 20px;
+      font-size: 16px;
+      background-color: #005e95;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+  <button id="toggleMapboxLayer">Toggle Municipalities Layer</button>
+  <div id="map"></div>
+
+  <script>
+    mapboxgl.accessToken = 'pk.eyJ1IjoiMjBhaG9lcyIsImEiOiJjbWFwazQxbDgwaXMzMmxwbzJmNmhidm0yIn0.NileAvzC_m2asZI3tLIqUw';
+
+    const map = new mapboxgl.Map({
+      container: 'map',
+      style: 'mapbox://styles/20ahoes/cmb6rnzqp00rs01sddsqq9xtx',
+      center: [-71.245, 42.254],
+      zoom: 8.8
+    });
+
+    const layerId = 'mbta-municipalities-by-compli-5gbi66';
+
+    function toggleLayer() {
+      const current = map.getLayoutProperty(layerId, 'visibility') || 'visible';
+      const newVis = current === 'none' ? 'visible' : 'none';
+      map.setLayoutProperty(layerId, 'visibility', newVis);
+      console.log(`🔄 Layer "${layerId}" toggled to ${newVis}`);
+    }
+
+    document.getElementById('toggleMapboxLayer').addEventListener('click', toggleLayer);
+
+    map.on('load', () => {
+      console.log("🔍 Loaded layers:");
+      const layers = map.getStyle().layers;
+      layers.forEach(layer => console.log(`• ${layer.id}`));
+    });
+  </script>
+</body>
+</html>
