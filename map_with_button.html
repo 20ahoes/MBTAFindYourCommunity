@@ -28,7 +28,6 @@
       width: 100%;
     }
 
-    /* Top-center toggle button bar */
     .top-bar {
       position: absolute;
       top: 0;
@@ -61,7 +60,6 @@
       background-color: rgba(255, 255, 255, 1);
     }
 
-    /* Top-left home icon */
     #homeButton {
       position: absolute;
       top: 10px;
@@ -153,16 +151,16 @@
       });
     });
 
-    // 🔍 Handle external search + highlight
+    // 🔍 Handle external search using queryRenderedFeatures
     window.addEventListener("message", function(event) {
       if (event.data?.type === 'search-town') {
         const searchName = event.data.name.trim().toLowerCase();
 
-        const features = map.querySourceFeatures('composite', {
-          sourceLayer: 'MunicipalitiesByCommunityType-C8ks3h'
+        const renderedFeatures = map.queryRenderedFeatures({
+          layers: ['municipalitiesbycommunitytype-c8ks3h copy']
         });
 
-        const match = features.find(f =>
+        const match = renderedFeatures.find(f =>
           f.properties?.['data0k5Yh1']?.toLowerCase() === searchName
         );
 
@@ -173,14 +171,6 @@
 
           const props = match.properties;
           alert(`📍 ${props['data0k5Yh1']}\nCommunity Type: ${props['data0k5Y_1'] ?? 'N/A'}`);
-
-          // Remove existing highlight
-          if (map.getSource('highlight-town')) {
-            map.getSource('highlight-town').setData({
-              type: 'FeatureCollection',
-              features: []
-            });
-          }
 
           if (!map.getSource('highlight-town')) {
             map.addSource('highlight-town', {
