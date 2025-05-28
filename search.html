@@ -66,7 +66,7 @@
       width: 100%; height: 100%;
       transition: left 0.5s ease, width 0.5s ease;
     }
-    /* Push main over when panel open */
+    /* Shift main when panel open */
     #container.info-open #main {
       left: 300px;
       width: calc(100% - 300px);
@@ -111,12 +111,24 @@
       <div class="content">
         <h2 id="townName">Town Name</h2>
         <div class="small-info">
-          <p><span class="title">Area in Sq. Miles:</span><span id="areaField"></span></p>
-          <p><span class="title">Population (2020):</span><span id="popField"></span></p>
+          <p>
+            <span class="title">Area in Sq. Miles:</span>
+            <span id="areaField"></span>
+          </p>
+          <p>
+            <span class="title">Population (2020):</span>
+            <span id="popField"></span>
+          </p>
         </div>
         <div class="big-info">
-          <p><span class="title">Community Type:</span><span id="commField"></span></p>
-          <p><span class="title">Unit Capacity Requirement:</span><span id="unitField"></span></p>
+          <p>
+            <span class="title">Community Type:</span>
+            <span id="commField"></span>
+          </p>
+          <p>
+            <span class="title">Unit Capacity Requirement:</span>
+            <span id="unitField"></span>
+          </p>
         </div>
       </div>
     </div>
@@ -124,7 +136,11 @@
     <!-- Main (search + map) -->
     <div id="main">
       <div class="search-panel">
-        <input type="text" id="townSearch" placeholder="Enter Town Name"/>
+        <input
+          type="text"
+          id="townSearch"
+          placeholder="Enter Town Name"
+        />
         <button id="doSearch">Search</button>
         <button id="doClear">Clear</button>
       </div>
@@ -138,19 +154,29 @@
 
   <script>
     const container = document.getElementById('container'),
-          mapFrame  = document.getElementById('mapFrame');
+          mapFrame  = document.getElementById('mapFrame'),
+          input     = document.getElementById('townSearch'),
+          btnSearch = document.getElementById('doSearch');
 
-    document.getElementById('doSearch').addEventListener('click', () => {
-      const name = document.getElementById('townSearch').value.trim();
+    // search logic in one function
+    function runSearch() {
+      const name = input.value.trim();
       if (!name) return;
-      mapFrame.contentWindow.postMessage({ type:'search-town', name }, '*');
+      mapFrame.contentWindow.postMessage({ type: 'search-town', name }, '*');
+    }
+
+    // click or Enter both trigger search
+    btnSearch.addEventListener('click', runSearch);
+    input.addEventListener('keydown', e => {
+      if (e.key === 'Enter') runSearch();
     });
 
     document.getElementById('doClear').addEventListener('click', () => {
-      mapFrame.contentWindow.postMessage({ type:'clear-town' }, '*');
+      mapFrame.contentWindow.postMessage({ type: 'clear-town' }, '*');
       container.classList.remove('info-open');
     });
 
+    // receive town-selected / clear-town
     window.addEventListener('message', e => {
       const msg = e.data;
       if (msg?.type === 'town-selected') {
