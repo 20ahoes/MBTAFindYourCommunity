@@ -1,126 +1,129 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
+  <meta charset="UTF-8"/>
   <title>Search + Info + Map</title>
   <style>
-    /* Full‑screen container */
     html, body {
-      margin: 0;
-      padding: 0;
-      height: 100%;
-      overflow: hidden;
+      height: 100vh; margin: 0; padding: 0;
       font-family: 'Roboto', sans-serif;
     }
-    /* Wrapper that holds the panel and the main content */
+    /* Container holds the sliding panel and main content */
     #container {
       position: relative;
-      width: 100%;
-      height: 100%;
+      width: 100%; height: 100%;
     }
-    /* Info panel, off‑screen to the left by default */
+    /* Panel off-screen left by default */
     #infoPanel {
-      position: absolute;
-      top: 0;
-      left: -30%;
-      width: 30%;
-      height: 100%;
+      position: absolute; top: 0; left: -30%;
+      width: 30%; height: 100%;
       background: #fff;
       box-shadow: 2px 0 6px rgba(0,0,0,0.1);
       overflow-y: auto;
       transition: left 0.5s ease;
       z-index: 5;
     }
-    /* When we add .info-open to the container, slide it in */
+    /* Slide panel in */
     #container.info-open #infoPanel {
       left: 0;
     }
-    /* Main area (search bar + map), fills 100% normally */
+    #infoPanel .content {
+      padding: 20px;
+    }
+    /* Town name */
+    #townName {
+      margin: 0 0 10px;
+      font-size: 1.5em;
+    }
+    /* Small info (area + pop) */
+    .small-info p {
+      margin: 4px 0;
+      font-size: 0.85em;
+    }
+    .small-info .title {
+      color: navy;
+      font-weight: bold;
+    }
+    /* Big info (community type + capacity) */
+    .big-info {
+      margin-top: 20px;
+    }
+    .big-info p {
+      margin: 8px 0;
+      font-size: 1.2em;
+    }
+    .big-info .title {
+      color: darkgreen;
+      font-weight: bold;
+    }
+    /* Main area (search + map) */
     #main {
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
+      position: absolute; top: 0; left: 0;
+      width: 100%; height: 100%;
       transition: left 0.5s ease, width 0.5s ease;
     }
-    /* When the panel is open, push main over 30% and shrink to 70% */
+    /* Push main over when panel open */
     #container.info-open #main {
-      left: 30%;
-      width: 70%;
+      left: 30%; width: 70%;
     }
-    /* Search bar fixed to top of the main area */
+    /* Search bar */
     .search-panel {
-      position: absolute;
-      top: 0;
-      left: 0;
-      right: 0;
+      position: absolute; top: 0; left: 0; right: 0;
       height: 60px;
       background: #f4f4f4;
-      display: flex;
-      align-items: center;
-      padding: 0 20px;
-      gap: 10px;
+      display: flex; align-items: center;
+      padding: 0 20px; gap: 10px;
       box-shadow: 0 2px 4px rgba(0,0,0,0.1);
       z-index: 10;
     }
     .search-panel input {
-      flex: 1;
-      padding: 8px;
-      font-size: 16px;
-      border: 1px solid #ccc;
-      border-radius: 4px;
+      flex: 1; padding: 8px; font-size: 16px;
+      border: 1px solid #ccc; border-radius: 4px;
     }
     .search-panel button {
-      padding: 8px 16px;
-      font-size: 16px;
-      font-weight: bold;
-      background: #005e95;
-      color: #fff;
-      border: none;
-      border-radius: 4px;
+      padding: 8px 16px; font-size: 16px; font-weight: bold;
+      background: #005e95; color: #fff; border: none; border-radius: 4px;
       cursor: pointer;
     }
     .search-panel button:hover {
       background: #003f63;
     }
-    /* The map iframe sits beneath the search bar */
+    /* Map iframe */
     #mapFrame {
-      position: absolute;
-      top: 60px;
-      left: 0;
-      right: 0;
-      bottom: 0;
+      position: absolute; top: 60px; left: 0; right: 0; bottom: 0;
       border: none;
-      width: 100%;
-      height: calc(100% - 60px);
+      width: 100%; height: calc(100% - 60px);
     }
   </style>
 </head>
 <body>
 
   <div id="container">
-    <!-- Left‑side Info Panel -->
+    <!-- Sliding info panel -->
     <div id="infoPanel">
       <div class="content">
         <h2 id="townName">Town Name</h2>
-        <p><strong>Municipality:</strong> <span id="municipalityField"></span></p>
-        <p><strong>Community Type:</strong> <span id="communityTypeField"></span></p>
-        <!-- add more fields here -->
+        <div class="small-info">
+          <p><span class="title">Area in Sq. Miles:</span> <span id="areaField"></span></p>
+          <p><span class="title">Population (2020):</span> <span id="popField"></span></p>
+        </div>
+        <div class="big-info">
+          <p><span class="title">Community Type:</span> <span id="commField"></span></p>
+          <p><span class="title">Unit Capacity Requirement:</span> <span id="unitField"></span></p>
+        </div>
       </div>
     </div>
 
     <!-- Main (search + map) -->
     <div id="main">
       <div class="search-panel">
-        <input type="text" id="townSearch" placeholder="Enter Town Name" />
+        <input  type="text"  id="townSearch" placeholder="Enter Town Name" />
         <button id="doSearch">Search</button>
         <button id="doClear">Clear</button>
       </div>
-
       <iframe
         id="mapFrame"
-        src="map_with_button.html?cachebust=1"
+        src="map_with_button.html?cachebust=3"
         title="Map View"
       ></iframe>
     </div>
@@ -130,27 +133,26 @@
     const container = document.getElementById('container');
     const mapFrame  = document.getElementById('mapFrame');
 
-    // Send search request to map iframe
     document.getElementById('doSearch').addEventListener('click', () => {
       const name = document.getElementById('townSearch').value.trim();
       if (!name) return;
-      mapFrame.contentWindow.postMessage({ type: 'search-town', name }, '*');
+      mapFrame.contentWindow.postMessage({ type:'search-town', name }, '*');
     });
 
-    // Send clear request and hide panel
     document.getElementById('doClear').addEventListener('click', () => {
-      mapFrame.contentWindow.postMessage({ type: 'clear-town' }, '*');
+      mapFrame.contentWindow.postMessage({ type:'clear-town' }, '*');
       container.classList.remove('info-open');
     });
 
-    // Listen for town-selected and clear-town messages from the map
     window.addEventListener('message', e => {
       const msg = e.data;
       if (msg?.type === 'town-selected') {
-        const props = msg.properties;
-        document.getElementById('townName').textContent            = props.Municipality  || 'N/A';
-        document.getElementById('municipalityField').textContent  = props.Municipality  || 'N/A';
-        document.getElementById('communityTypeField').textContent = props.CommunityType || 'N/A';
+        const p = msg.properties;
+        document.getElementById('townName').textContent = p.Municipality || 'N/A';
+        document.getElementById('areaField').textContent = p.MBTAStationMunicipaliti_Clip1_A || 'N/A';
+        document.getElementById('popField').textContent  = p.MBTAStationMunicipaliti_Clip1_P || 'N/A';
+        document.getElementById('commField').textContent = p.data0k5Yh_TableToExcel_ExcelT_2 || 'N/A';
+        document.getElementById('unitField').textContent = p["data0k5Yh_TableToExcel_ExcelT_3 "] || 'N/A';
         container.classList.add('info-open');
       }
       else if (msg?.type === 'clear-town') {
@@ -158,6 +160,5 @@
       }
     });
   </script>
-
 </body>
 </html>
