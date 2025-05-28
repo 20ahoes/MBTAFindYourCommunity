@@ -8,63 +8,33 @@
   <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
   <script src="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.js"></script>
   <link href="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.css" rel="stylesheet" />
+
   <style>
     body, html {
-      margin: 0;
-      padding: 0;
-      height: 100%;
-      font-family: 'Roboto', sans-serif;
+      margin: 0; padding: 0; height: 100%; font-family: 'Roboto', sans-serif;
     }
     #map {
-      position: absolute;
-      top: 0;
-      bottom: 0;
-      width: 100%;
+      position: absolute; top: 0; bottom: 0; width: 100%;
     }
     .top-bar {
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 60px;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      background: linear-gradient(to bottom, rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0));
-      z-index: 1;
-      pointer-events: none;
+      position: absolute; top: 0; left: 0; width: 100%; height: 60px;
+      display: flex; justify-content: center; align-items: center;
+      background: linear-gradient(to bottom, rgba(0,0,0,0.5), rgba(0,0,0,0));
+      z-index: 1; pointer-events: none;
     }
-    #toggleMapboxLayer, #clearSelectionButton {
-      pointer-events: auto;
-      padding: 10px 20px;
-      font-size: 16px;
-      font-weight: 700;
-      background-color: rgba(255, 255, 255, 0.9);
-      color: #005e95;
-      border: none;
-      border-radius: 8px;
-      cursor: pointer;
-      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+    #toggleMapboxLayer {
+      pointer-events: auto; padding: 10px 20px; font-size: 16px; font-weight: 700;
+      background-color: rgba(255,255,255,0.9); color: #005e95; border: none;
+      border-radius: 8px; cursor: pointer; box-shadow: 0 2px 6px rgba(0,0,0,0.3);
       backdrop-filter: blur(4px);
-      margin: 0 5px;
     }
     #homeButton {
-      position: absolute;
-      top: 10px;
-      left: 10px;
-      z-index: 2;
-      padding: 10px;
-      background-color: rgba(255, 255, 255, 0.9);
-      color: #005e95;
-      border: none;
-      border-radius: 8px;
-      cursor: pointer;
-      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+      position: absolute; top: 10px; left: 10px; z-index: 2; padding: 10px;
+      background-color: rgba(255,255,255,0.9); color: #005e95; border: none;
+      border-radius: 8px; cursor: pointer; box-shadow: 0 2px 6px rgba(0,0,0,0.3);
       backdrop-filter: blur(4px);
     }
-    .material-icons {
-      font-size: 24px;
-    }
+    .material-icons { font-size: 24px; }
   </style>
 </head>
 <body>
@@ -74,7 +44,6 @@
 
   <div class="top-bar">
     <button id="toggleMapboxLayer">Toggle Municipalities Layer</button>
-    <button id="clearSelectionButton">Clear</button>
   </div>
 
   <div id="map"></div>
@@ -85,10 +54,11 @@
     const defaultCenter = [-71.245, 42.254];
     const defaultZoom = 8.0;
     const layerId = 'municipalitiesbycommunitytype-c8ks3h copy';
-    const sourceLayer = 'MunicipalitiesByCommunityType-c8ks3h copy';
+    const sourceLayer = 'MunicipalitiesByCommunityType-C8ks3h';
     const nameField = 'Municipali';
     const bounds = [[-72.5, 41.5], [-69.5, 43.0]];
 
+    // initialize map
     const map = new mapboxgl.Map({
       container: 'map',
       style: 'mapbox://styles/20ahoes/cmb6rnzqp00rs01sddsqq9xtx',
@@ -99,74 +69,88 @@
       maxBounds: bounds
     });
 
-    let currentTown = null;
-
-    function highlightAndZoom(match) {
-      if (!match) return;
-      currentTown = match.properties[nameField];
-
-      const coordinates = match.geometry.type === 'MultiPolygon'
-        ? match.geometry.coordinates.flat(2)
-        : match.geometry.coordinates[0];
-
-      const bounds = new mapboxgl.LngLatBounds();
-      coordinates.forEach(coord => bounds.extend(coord));
-
-      const center = bounds.getCenter();
-      map.flyTo({ center: center, zoom: defaultZoom, speed: 1.2, essential: true });
-
-      map.setPaintProperty(layerId, 'fill-color', [
-        'case',
-        ['==', ['get', nameField], match.properties[nameField]],
-        '#f00', '#ccc'
-      ]);
-    }
-
-    function clearSelection() {
-      currentTown = null;
-      map.setPaintProperty(layerId, 'fill-color', '#ccc');
-    }
-
+    // add highlight source & layers once map loads
     map.on('load', () => {
-      const fillLayer = map.getStyle().layers.find(l => l.id === layerId && l.type === 'fill');
+      map.addSource('highlight-town', {
+        type: 'geojson',
+        data: { type: 'FeatureCollection', features: [] }
+      });
+      map.addLayer({
+        id: 'highlight-town-fill',
+        type: 'fill',
+        source: 'highlight-town',
+        paint: { 'fill-color': '#FFEB3B', 'fill-opacity': 0.6 }
+      });
+      map.addLayer({
+        id: 'highlight-town-line',
+        type: 'line',
+        source: 'highlight-town',
+        paint: { 'line-color': '#FF9800', 'line-width': 2 }
+      });
 
-      if (!fillLayer) {
-        console.error("❌ Fill layer not found");
-        return;
-      }
-
+      // toggle base municipalities layer
       document.getElementById('toggleMapboxLayer').addEventListener('click', () => {
-        const current = map.getLayoutProperty(fillLayer.id, 'visibility') || 'visible';
-        const newVis = current === 'none' ? 'visible' : 'none';
-        map.setLayoutProperty(fillLayer.id, 'visibility', newVis);
-        console.log(`🔄 Layer "${fillLayer.id}" toggled to ${newVis}`);
+        const vis = map.getLayoutProperty(layerId, 'visibility') || 'visible';
+        map.setLayoutProperty(layerId, 'visibility', vis === 'none' ? 'visible' : 'none');
       });
 
-      document.getElementById('clearSelectionButton').addEventListener('click', () => {
-        clearSelection();
-      });
-
+      // home button
       document.getElementById('homeButton').addEventListener('click', () => {
         map.flyTo({ center: defaultCenter, zoom: defaultZoom, speed: 1.2, essential: true });
       });
 
-      window.addEventListener("message", function(event) {
-        if (event.data?.type === 'search-town') {
-          const searchName = event.data.name.trim().toLowerCase();
-          const features = map.queryRenderedFeatures({ layers: [layerId] });
-
-          const match = features.find(f => f.properties?.[nameField]?.toLowerCase() === searchName);
-          if (match) highlightAndZoom(match);
-        } else if (event.data?.type === 'clear-town') {
-          clearSelection();
-        }
+      // click on map features
+      map.on('click', layerId, e => {
+        if (e.features.length) highlightAndZoom(e.features[0]);
       });
+    });
 
-      map.on('click', layerId, function(e) {
-        if (e.features.length > 0) {
-          highlightAndZoom(e.features[0]);
-        }
+    // compute polygon center (avg of all vertices)
+    function getPolygonCenter(coords) {
+      let lngSum = 0, latSum = 0, count = 0;
+      coords.flat(2).forEach(([lng, lat]) => (lngSum += lng, latSum += lat, count++));
+      return [lngSum / count, latSum / count];
+    }
+
+    // highlight & fit bounds
+    function highlightAndZoom(feature) {
+      const geometry = feature.geometry;
+      const coords = geometry.type === 'MultiPolygon'
+        ? geometry.coordinates.flat(2)
+        : geometry.coordinates[0];
+
+      // fit to full polygon bounds
+      const b = new mapboxgl.LngLatBounds();
+      coords.forEach(c => b.extend(c));
+      map.fitBounds(b, { padding: 40, duration: 1000 });
+
+      // set highlight source data
+      map.getSource('highlight-town').setData({
+        type: 'FeatureCollection',
+        features: [feature.toJSON()]
       });
+    }
+
+    // clear highlight
+    function clearSelection() {
+      map.getSource('highlight-town').setData({
+        type: 'FeatureCollection',
+        features: []
+      });
+    }
+
+    // listen for search/clear messages
+    window.addEventListener('message', event => {
+      const msg = event.data || {};
+      if (msg.type === 'search-town') {
+        const search = (msg.name||'').trim().toLowerCase();
+        const feats = map.querySourceFeatures('composite', { sourceLayer });
+        const match = feats.find(f => f.properties[nameField]?.toLowerCase() === search);
+        if (match) highlightAndZoom(match);
+      }
+      else if (msg.type === 'clear-town') {
+        clearSelection();
+      }
     });
   </script>
 </body>
