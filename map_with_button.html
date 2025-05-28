@@ -2,10 +2,10 @@
 <html>
 <head>
   <meta charset="utf-8">
-  <title>Map with Fade‑Others Highlight</title>
+  <title>Map with Fade‑Others & Clear to Home</title>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
 
-  <!-- Roboto & Icons -->
+  <!-- Fonts & Icons -->
   <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@700&display=swap" rel="stylesheet"/>
   <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet"/>
 
@@ -19,7 +19,7 @@
     .top-bar {
       position:absolute; top:0; left:0; width:100%; height:60px;
       display:flex; justify-content:center; align-items:center;
-      background: linear-gradient(to bottom, rgba(0,0,0,0.5), rgba(0,0,0,0));
+      background:linear-gradient(to bottom,rgba(0,0,0,0.5),rgba(0,0,0,0));
       pointer-events:none; z-index:1;
     }
     #toggleMapboxLayer, #homeButton {
@@ -34,31 +34,32 @@
 </head>
 <body>
 
-  <!-- Home & Toggle -->
-  <button id="homeButton" title="Default View">
+  <!-- Home (also Clear) & Toggle Base Layer -->
+  <button id="homeButton" title="Clear & Home">
     <span class="material-icons">home</span>
   </button>
   <div class="top-bar">
     <button id="toggleMapboxLayer">Toggle Municipalities Layer</button>
   </div>
 
-  <!-- Map -->
+  <!-- Map Container -->
   <div id="map"></div>
 
   <script>
     mapboxgl.accessToken = 'pk.eyJ1IjoiMjBhaG9lcyIsImEiOiJjbWFwazQxbDgwaXMzMmxwbzJmNmhidm0yIn0.NileAvzC_m2asZI3tLIqUw';
 
+    // Config
     const defaultCenter    = [-71.245, 42.254],
           defaultZoom      = 8,
           vectorLayerId    = 'municipalitiesbycommunitytype-c8ks3h copy',
-          tileNameField    = 'Municipali',       // field in vector‑tile layer
-          geojsonNameField = 'Municipality',     // field in full GEOJSON
+          tileNameField    = 'Municipali',      // vector tile field
+          geojsonNameField = 'Municipality',    // full GeoJSON field
           bounds           = [[-72.5,41.5],[-69.5,43.0]],
           geojsonURL       = './MunicipalitiesByCommunityType.geojson';
 
     let municipalitiesData = [];
 
-    // init map
+    // Init map
     const map = new mapboxgl.Map({
       container: 'map',
       style: 'mapbox://styles/20ahoes/cmb6rnzqp00rs01sddsqq9xtx',
@@ -69,10 +70,10 @@
       maxBounds: bounds
     });
 
-    // get full-bounds of any feature
+    // Helpers
     function getFeatureBounds(feature) {
       const geom = feature.geometry;
-      const pts  = geom.type === 'MultiPolygon'
+      const pts = (geom.type === 'MultiPolygon')
         ? geom.coordinates.flat(2)
         : geom.coordinates[0];
       return pts.reduce(
@@ -81,64 +82,59 @@
       );
     }
 
-    // highlight + fade others + zoom
     function selectFeature(feature) {
-      // 1) Zoom to full polygon
+      // Zoom to full polygon
       const bb = getFeatureBounds(feature);
-      map.fitBounds(bb, { padding:40, duration:800 });
+      map.fitBounds(bb, { padding: 40, duration: 800 });
 
-      // 2) Show fade-layer: all except this one
+      // Fade out others
       map.setFilter('fade-layer', ['!=', ['get', geojsonNameField], feature.properties[geojsonNameField]]);
-      map.setLayoutProperty('fade-layer','visibility','visible');
+      map.setLayoutProperty('fade-layer', 'visibility', 'visible');
 
-      // 3) Show highlight on this polygon
+      // Highlight selected
       map.getSource('highlight-town').setData({
         type: 'FeatureCollection',
         features: [feature]
       });
     }
 
-    // clear both highlight & fade, then fly home
     function clearSelection() {
-      map.setLayoutProperty('fade-layer','visibility','none');
-      map.getSource('highlight-town').setData({
-        type: 'FeatureCollection',
-        features: []
-      });
+      // Hide fade
+      map.setLayoutProperty('fade-layer', 'visibility', 'none');
+      // Clear highlight
+      map.getSource('highlight-town').setData({ type:'FeatureCollection', features:[] });
+      // Fly back home
       map.flyTo({ center: defaultCenter, zoom: defaultZoom, speed:1.2, essential:true });
     }
 
+    // Map setup
     map.on('load', () => {
-      // 1) fetch full GEOJSON into memory
+      // 1) Load full GeoJSON into memory
       fetch(geojsonURL)
-        .then(r=>r.ok ? r.json() : Promise.reject(r.status))
+        .then(r => r.ok ? r.json() : Promise.reject(r.status))
         .then(data => municipalitiesData = data.features)
-        .catch(e=>console.error('GeoJSON load failed', e));
+        .catch(err => console.error('GeoJSON load failed:', err));
 
-      // 2) add source for full municipalities
-      map.addSource('municipalities-full-src', {
-        type:'geojson',
+      // 2) Add a source & layer for fading all towns
+      map.addSource('municipalities-full', {
+        type: 'geojson',
         data: geojsonURL
       });
-
-      // 3) add fade-layer (hidden by default)
       map.addLayer({
         id: 'fade-layer',
         type: 'fill',
-        source: 'municipalities-full-src',
+        source: 'municipalities-full',
         paint: {
           'fill-color': '#888',
           'fill-opacity': 0.5
         },
-        layout: {
-          visibility: 'none'
-        }
-      }, 'highlight-fill'); // insert below highlight-fill
+        layout: { visibility: 'none' }
+      });
 
-      // 4) highlight source & layers
+      // 3) Add highlight source + layers
       map.addSource('highlight-town', {
-        type:'geojson',
-        data: { type:'FeatureCollection', features:[] }
+        type: 'geojson',
+        data: { type: 'FeatureCollection', features: [] }
       });
       map.addLayer({
         id: 'highlight-fill',
@@ -153,35 +149,37 @@
         paint: { 'line-color':'#FF9800','line-width':2 }
       });
 
-      // 5) UI buttons
+      // 4) Toggle base tile layer
       document.getElementById('toggleMapboxLayer').onclick = () => {
-        const v = map.getLayoutProperty(vectorLayerId,'visibility')||'visible';
+        const v = map.getLayoutProperty(vectorLayerId,'visibility') || 'visible';
         map.setLayoutProperty(vectorLayerId,'visibility', v==='none'?'visible':'none');
       };
+
+      // 5) Home button = Clear + reset view
       document.getElementById('homeButton').onclick = clearSelection;
 
-      // 6) click on vector‑tile layer
+      // 6) Click on a town in the vector‑tile layer
       map.on('click', vectorLayerId, e => {
         if (!municipalitiesData.length) return;
-        const clicked = e.features[0].properties[tileNameField];
+        const clickedName = e.features[0].properties[tileNameField];
         const match = municipalitiesData.find(
-          f => f.properties[geojsonNameField]?.toLowerCase() === clicked.toLowerCase()
+          f => f.properties[geojsonNameField]?.toLowerCase() === clickedName.toLowerCase()
         );
         if (match) selectFeature(match);
       });
     });
 
-    // 7) listen for Search/Clear messages
+    // 7) Listen for Search/Clear messages
     window.addEventListener('message', e => {
       if (!municipalitiesData.length) return;
       const { type, name } = e.data || {};
-      if (type==='search-town') {
+      if (type === 'search-town') {
         const match = municipalitiesData.find(
           f => f.properties[geojsonNameField]?.toLowerCase() === name.trim().toLowerCase()
         );
         if (match) selectFeature(match);
       }
-      else if (type==='clear-town') {
+      else if (type === 'clear-town') {
         clearSelection();
       }
     });
