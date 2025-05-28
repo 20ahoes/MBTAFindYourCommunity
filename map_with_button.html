@@ -16,8 +16,6 @@
   <style>
     body, html { margin:0; padding:0; height:100%; font-family:'Roboto',sans-serif; }
     #map { position:absolute; top:0; bottom:0; width:100%; }
-
-    /* Home/Clear button */
     #homeButton {
       position:absolute; top:10px; left:10px; z-index:2;
       pointer-events:auto; padding:10px 20px; font-size:16px; font-weight:700;
@@ -29,7 +27,7 @@
 </head>
 <body>
 
-  <!-- Home/Clear -->
+  <!-- Home/Clear button -->
   <button id="homeButton" title="Clear & Home">
     <span class="material-icons">home</span>
   </button>
@@ -49,7 +47,6 @@
 
     let municipalitiesData = [];
 
-    // Initialize map
     const map = new mapboxgl.Map({
       container:'map',
       style:'mapbox://styles/20ahoes/cmb6rnzqp00rs01sddsqq9xtx',
@@ -62,33 +59,29 @@
 
     function getFeatureBounds(feature) {
       const geom = feature.geometry;
-      const pts = geom.type === 'MultiPolygon'
+      const pts = geom.type==='MultiPolygon'
         ? geom.coordinates.flat(2)
         : geom.coordinates[0];
       return pts.reduce(
-        (b, c) => b.extend(c),
+        (b,c) => b.extend(c),
         new mapboxgl.LngLatBounds()
       );
     }
 
     function selectFeature(feature) {
-      // Zoom to full polygon
       const bb = getFeatureBounds(feature);
-      map.fitBounds(bb, { padding: 40, duration: 800 });
+      map.fitBounds(bb, { padding:40, duration:800 });
 
-      // Fade out others
       map.setFilter('fade-layer',
         ['!=', ['get', geojsonNameField], feature.properties[geojsonNameField]]
       );
       map.setLayoutProperty('fade-layer','visibility','visible');
 
-      // Highlight selected
       map.getSource('highlight-town').setData({
         type:'FeatureCollection',
         features:[feature]
       });
 
-      // Notify parent
       window.parent.postMessage({
         type:'town-selected',
         properties: feature.properties
@@ -103,41 +96,30 @@
     }
 
     map.on('load', () => {
-      // Load full GeoJSON into memory
       fetch(geojsonURL)
-        .then(r=> r.ok? r.json(): Promise.reject(r.status))
+        .then(r => r.ok? r.json(): Promise.reject(r.status))
         .then(data => municipalitiesData = data.features)
         .catch(err => console.error('GeoJSON load failed:', err));
 
-      // Fade layer (hidden by default)
-      map.addSource('municipalities-full', { type:'geojson', data: geojsonURL });
+      map.addSource('municipalities-full',{ type:'geojson', data:geojsonURL });
       map.addLayer({
-        id:'fade-layer',
-        type:'fill',
-        source:'municipalities-full',
+        id:'fade-layer', type:'fill', source:'municipalities-full',
         paint:{ 'fill-color':'#888','fill-opacity':0.5 },
         layout:{ visibility:'none' }
       });
 
-      // Highlight layers
-      map.addSource('highlight-town', { type:'geojson', data:{ type:'FeatureCollection', features:[] } });
+      map.addSource('highlight-town',{ type:'geojson', data:{type:'FeatureCollection',features:[]} });
       map.addLayer({
-        id:'highlight-fill',
-        type:'fill',
-        source:'highlight-town',
+        id:'highlight-fill', type:'fill', source:'highlight-town',
         paint:{ 'fill-color':'#FFEB3B','fill-opacity':0.8 }
       });
       map.addLayer({
-        id:'highlight-line',
-        type:'line',
-        source:'highlight-town',
+        id:'highlight-line', type:'line', source:'highlight-town',
         paint:{ 'line-color':'#FF9800','line-width':2 }
       });
 
-      // Home/Clear button
       document.getElementById('homeButton').onclick = clearSelection;
 
-      // Click on vector‑tile layer
       map.on('click', vectorLayerId, e => {
         if (!municipalitiesData.length) return;
         const clicked = e.features[0].properties[tileNameField];
@@ -148,17 +130,17 @@
       });
     });
 
-    // Listen for Search/Clear messages
     window.addEventListener('message', e => {
       const msg = e.data;
       if (!municipalitiesData.length) return;
-      if (msg?.type === 'search-town') {
+      if (msg?.type==='search-town') {
         const term = msg.name.trim().toLowerCase();
         const match = municipalitiesData.find(
-          f=> f.properties[geojsonNameField]?.toLowerCase() === term
+          f=> f.properties[geojsonNameField]?.toLowerCase()===term
         );
         if (match) selectFeature(match);
-      } else if (msg?.type === 'clear-town') {
+      }
+      else if (msg?.type==='clear-town') {
         clearSelection();
       }
     });
