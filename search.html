@@ -2,19 +2,10 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Search Town and View Map</title>
+  <title>Search Town</title>
   <style>
-    /* 1) Make the page fill the viewport */
-    html, body {
-      height: 100vh;
-      margin: 0;
-      padding: 0;
-      font-family: 'Roboto', sans-serif;
-      display: flex;
-      flex-direction: column;
-    }
-
-    /* 2) Top search panel is exactly 60px tall */
+    html, body { height: 100vh; margin: 0; }
+    #container { display: flex; flex-direction: column; height: 100%; }
     .search-panel {
       height: 60px;
       background: #f4f4f4;
@@ -25,7 +16,6 @@
       box-shadow: 0 2px 4px rgba(0,0,0,0.1);
       z-index: 10;
     }
-
     .search-panel input {
       flex: 1;
       padding: 8px;
@@ -33,13 +23,12 @@
       border-radius: 4px;
       border: 1px solid #ccc;
     }
-
     .search-panel button {
       padding: 8px 16px;
       font-size: 16px;
       font-weight: bold;
       background-color: #005e95;
-      color: white;
+      color: #fff;
       border: none;
       border-radius: 4px;
       cursor: pointer;
@@ -47,31 +36,29 @@
     .search-panel button:hover {
       background-color: #003f63;
     }
-
-    /* 3) The iframe takes the rest of the space */
     iframe {
-      flex: 1 1 auto;
-      width: 100%;
-      height: calc(100% - 60px);
+      flex: 1;
       border: none;
+      width: 100%;
     }
   </style>
 </head>
 <body>
+  <div id="container">
+    <!-- Search + Clear UI -->
+    <div class="search-panel">
+      <input id="townSearch" placeholder="Enter Town Name" />
+      <button id="doSearch">Search</button>
+      <button id="doClear">Clear</button>
+    </div>
 
-  <!-- Search Bar + Clear Button -->
-  <div class="search-panel">
-    <input type="text" id="townSearch" placeholder="Enter Town Name" />
-    <button id="doSearch">Search</button>
-    <button id="doClear">Clear</button>
+    <!-- Map iframe -->
+    <iframe
+      id="mapFrame"
+      src="https://20ahoes.github.io/MBTAFindYourCommunity/map_with_button.html?force=1"
+      title="Map View"
+    ></iframe>
   </div>
-
-  <!-- Map Embed -->
-  <iframe
-    id="mapFrame"
-    src="https://20ahoes.github.io/MBTAFindYourCommunity/map_with_button.html?force=1"
-    title="Map View"
-  ></iframe>
 
   <script>
     const mapFrame = document.getElementById('mapFrame');
@@ -88,6 +75,5 @@
       console.log("🧹 Sent clear-town");
     });
   </script>
-
 </body>
 </html>
