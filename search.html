@@ -51,12 +51,14 @@
 </head>
 <body>
 
+  <!-- Search Bar + Clear Button -->
   <div class="search-panel">
     <input type="text" id="townSearch" placeholder="Enter Town Name" />
     <button id="doSearch">Search</button>
     <button id="doClear">Clear</button>
   </div>
 
+  <!-- Map Embed -->
   <iframe
     id="mapFrame"
     src="https://20ahoes.github.io/MBTAFindYourCommunity/map_with_button.html?force=1"
@@ -64,17 +66,17 @@
   ></iframe>
 
   <script>
-    const iframe = document.getElementById('mapFrame');
+    const mapFrame = document.getElementById('mapFrame');
 
     document.getElementById('doSearch').addEventListener('click', () => {
       const name = document.getElementById('townSearch').value.trim();
       if (!name) return;
-      iframe.contentWindow.postMessage({ type: 'search-town', name }, '*');
+      mapFrame.contentWindow.postMessage({ type: 'search-town', name }, '*');
       console.log("🔎 Sent search-town:", name);
     });
 
     document.getElementById('doClear').addEventListener('click', () => {
-      iframe.contentWindow.postMessage({ type: 'clear-town' }, '*');
+      mapFrame.contentWindow.postMessage({ type: 'clear-town' }, '*');
       console.log("🧹 Sent clear-town");
     });
   </script>
