@@ -5,7 +5,7 @@
   <title>Map with Fade & Notify</title>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
 
-  <!-- Roboto & Material Icons -->
+  <!-- Roboto & Icons -->
   <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@700&display=swap" rel="stylesheet"/>
   <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet"/>
 
@@ -16,50 +16,38 @@
   <style>
     body, html { margin:0; padding:0; height:100%; font-family:'Roboto',sans-serif; }
     #map { position:absolute; top:0; bottom:0; width:100%; }
-    .top-bar {
-      position:absolute; top:0; left:0; width:100%; height:60px;
-      display:flex; justify-content:center; align-items:center;
-      background: linear-gradient(to bottom, rgba(0,0,0,0.5), rgba(0,0,0,0));
-      pointer-events:none; z-index:1;
-    }
-    #toggleMapboxLayer, #homeButton {
+    #homeButton {
+      position:absolute; top:10px; left:10px; z-index:2;
       pointer-events:auto; padding:10px 20px; font-size:16px; font-weight:700;
       background:rgba(255,255,255,0.9); color:#005e95; border:none; border-radius:8px;
       cursor:pointer; box-shadow:0 2px 6px rgba(0,0,0,0.3); backdrop-filter:blur(4px);
     }
-    #toggleMapboxLayer { margin:0 5px; }
-    #homeButton { position:absolute; top:10px; left:10px; z-index:2; }
     .material-icons { font-size:24px; }
   </style>
 </head>
 <body>
 
-  <!-- Home (also Clear) & Toggle Buttons -->
+  <!-- Home/Clear button -->
   <button id="homeButton" title="Clear & Home">
     <span class="material-icons">home</span>
   </button>
-  <div class="top-bar">
-    <button id="toggleMapboxLayer">Toggle Municipalities Layer</button>
-  </div>
 
-  <!-- Map Container -->
   <div id="map"></div>
 
   <script>
     mapboxgl.accessToken = 'pk.eyJ1IjoiMjBhaG9lcyIsImEiOiJjbWFwazQxbDgwaXMzMmxwbzJmNmhidm0yIn0.NileAvzC_m2asZI3tLIqUw';
 
-    // Configuration
     const defaultCenter    = [-71.245, 42.254],
           defaultZoom      = 8,
           vectorLayerId    = 'municipalitiesbycommunitytype-c8ks3h copy',
-          tileNameField    = 'Municipali',      // vector‑tile attribute
-          geojsonNameField = 'Municipality',    // full‑GeoJSON attribute
+          tileNameField    = 'Municipali',
+          geojsonNameField = 'Municipality',
           bounds           = [[-72.5,41.5],[-69.5,43.0]],
           geojsonURL       = './MunicipalitiesByCommunityType.geojson';
 
     let municipalitiesData = [];
 
-    // Initialize the map
+    // Initialize map
     const map = new mapboxgl.Map({
       container: 'map',
       style: 'mapbox://styles/20ahoes/cmb6rnzqp00rs01sddsqq9xtx',
@@ -70,7 +58,7 @@
       maxBounds: bounds
     });
 
-    // Compute full bounds of a polygon/MultiPolygon feature
+    // Compute full bounds of a feature
     function getFeatureBounds(feature) {
       const geom = feature.geometry;
       const pts = geom.type === 'MultiPolygon'
@@ -82,50 +70,47 @@
       );
     }
 
-    // Highlight & fade others & notify parent
+    // Select & highlight a feature
     function selectFeature(feature) {
-      // Zoom to full extent
+      // Zoom
       const bb = getFeatureBounds(feature);
       map.fitBounds(bb, { padding: 40, duration: 800 });
 
-      // Fade out all others
+      // Fade others
       map.setFilter('fade-layer',
         ['!=', ['get', geojsonNameField], feature.properties[geojsonNameField]]
       );
       map.setLayoutProperty('fade-layer','visibility','visible');
 
-      // Highlight chosen feature
+      // Highlight selected
       map.getSource('highlight-town').setData({
         type: 'FeatureCollection',
         features: [feature]
       });
 
-      // Notify the parent so it can open the info panel
+      // Notify parent
       window.parent.postMessage({
         type: 'town-selected',
         properties: feature.properties
       }, '*');
     }
 
-    // Clear fades & highlights & reset view
+    // Clear highlight/fade & reset view
     function clearSelection() {
       map.setLayoutProperty('fade-layer','visibility','none');
-      map.getSource('highlight-town').setData({
-        type:'FeatureCollection', features:[]
-      });
-      map.flyTo({ center: defaultCenter, zoom: defaultZoom, speed: 1.2, essential: true });
-      // Also notify parent to close info panel
+      map.getSource('highlight-town').setData({ type:'FeatureCollection', features:[] });
+      map.flyTo({ center: defaultCenter, zoom: defaultZoom, speed:1.2, essential:true });
       window.parent.postMessage({ type:'clear-town' }, '*');
     }
 
     map.on('load', () => {
-      // 1) Load full GeoJSON list into memory
+      // 1) Fetch full GeoJSON
       fetch(geojsonURL)
         .then(r => r.ok ? r.json() : Promise.reject(r.status))
         .then(data => municipalitiesData = data.features)
         .catch(err => console.error('GeoJSON load failed:', err));
 
-      // 2) Add fade‑others layer (hidden by default)
+      // 2) Fade layer (hidden default)
       map.addSource('municipalities-full', { type:'geojson', data: geojsonURL });
       map.addLayer({
         id: 'fade-layer',
@@ -135,7 +120,7 @@
         layout: { visibility: 'none' }
       });
 
-      // 3) Add highlight source & layers
+      // 3) Highlight source & layers
       map.addSource('highlight-town', {
         type:'geojson',
         data: { type:'FeatureCollection', features: [] }
@@ -153,15 +138,10 @@
         paint: { 'line-color':'#FF9800','line-width':2 }
       });
 
-      // 4) Wire up the Toggle button
-      document.getElementById('toggleMapboxLayer').onclick = () => {
-        const v = map.getLayoutProperty(vectorLayerId,'visibility') || 'visible';
-        map.setLayoutProperty(vectorLayerId,'visibility', v === 'none' ? 'visible' : 'none');
-      };
-      // 5) Wire up Home (Clear)
+      // Home/Clear button
       document.getElementById('homeButton').onclick = clearSelection;
 
-      // 6) Clicking the base vector layer
+      // Click on vector‑tile layer
       map.on('click', vectorLayerId, e => {
         if (!municipalitiesData.length) return;
         const clickedName = e.features[0].properties[tileNameField];
@@ -172,7 +152,7 @@
       });
     });
 
-    // 7) Listen for Search/Clear messages from parent
+    // Listen for search/clear messages
     window.addEventListener('message', e => {
       const msg = e.data;
       if (!municipalitiesData.length) return;
