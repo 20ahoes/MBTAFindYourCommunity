@@ -104,19 +104,26 @@
       if (!match) return;
       currentTown = match.properties[nameField];
 
-      const bounds = new mapboxgl.LngLatBounds();
       const coordinates = match.geometry.type === 'MultiPolygon'
-        ? match.geometry.coordinates[0][0]
+        ? match.geometry.coordinates.flat(2)
         : match.geometry.coordinates[0];
 
+      const bounds = new mapboxgl.LngLatBounds();
       coordinates.forEach(coord => bounds.extend(coord));
-      map.fitBounds(bounds, { padding: 40, duration: 1000, maxZoom: defaultZoom });
+
+      const center = bounds.getCenter();
+      map.flyTo({ center, zoom: defaultZoom, speed: 1.2, essential: true });
 
       map.setPaintProperty(layerId, 'fill-color', [
         'case',
         ['==', ['get', nameField], match.properties[nameField]],
         '#f00', '#ccc'
       ]);
+    }
+
+    function clearSelection() {
+      currentTown = null;
+      map.setPaintProperty(layerId, 'fill-color', '#ccc');
     }
 
     map.on('load', () => {
@@ -145,6 +152,8 @@
 
           const match = features.find(f => f.properties?.[nameField]?.toLowerCase() === searchName);
           if (match) highlightAndZoom(match);
+        } else if (event.data?.type === 'clear-town') {
+          clearSelection();
         }
       });
 
