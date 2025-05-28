@@ -4,22 +4,47 @@
   <meta charset="UTF-8" />
   <title>Search + Info + Map</title>
   <style>
-    html, body { height:100vh; margin:0; padding:0; font-family:'Roboto',sans-serif; }
-    #container { display:flex; height:100%; transition: all .5s ease; }
+    html, body {
+      height: 100vh;
+      margin: 0; padding: 0;
+      font-family: 'Roboto', sans-serif;
+    }
 
-    /* Info panel on left, hidden by default */
+    /* Container holds the info panel on the left and main content on the right */
+    #container {
+      display: flex;
+      height: 100%;
+      transition: all 0.5s ease;
+    }
+
+    /* Info panel (hidden by default) */
     #infoPanel {
       width: 0;
       overflow: hidden;
       background: #fff;
       box-shadow: 2px 0 6px rgba(0,0,0,0.1);
-      transition: width .5s ease;
+      transition: width 0.5s ease;
     }
-    #infoPanel.open { width: 30%; }
-    #infoPanel .content { padding: 20px; }
+    #infoPanel.open {
+      width: 30%;
+    }
+    #infoPanel .content {
+      padding: 20px;
+    }
 
-    /* Main area (search + map) */
-    #main { flex: 1; display: flex; flex-direction: column; }
+    /* Main area (search bar + map) */
+    #main {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      transition: flex 0.5s ease;
+    }
+    /* When panel is open, shrink main to 70% */
+    #container.info-open #main {
+      flex: 0 0 70%;
+    }
+
+    /* Search bar */
     .search-panel {
       height: 60px;
       background: #f4f4f4;
@@ -47,40 +72,39 @@
       border-radius: 4px;
       cursor: pointer;
     }
-    .search-panel button:hover { background: #003f63; }
+    .search-panel button:hover {
+      background: #003f63;
+    }
 
     /* Map iframe */
     #mapFrame {
       flex: 1;
       width: 100%;
       border: none;
-      transition: width .5s ease;
     }
-    /* When info is open, shrink map to 70% */
-    #container.info-open #mapFrame { width: 70%; }
+
   </style>
 </head>
 <body>
 
   <div id="container">
-    <!-- Info panel -->
+    <!-- Left‐side Info Panel -->
     <div id="infoPanel">
       <div class="content">
         <h2 id="townName">Town Name</h2>
         <p><strong>Municipality:</strong> <span id="municipalityField"></span></p>
         <p><strong>Community Type:</strong> <span id="communityTypeField"></span></p>
-        <!-- add more fields here as needed -->
+        <!-- add more fields here -->
       </div>
     </div>
 
-    <!-- Main (search + map) -->
+    <!-- Main Content: Search Bar + Map -->
     <div id="main">
       <div class="search-panel">
-        <input  type="text" id="townSearch" placeholder="Enter Town Name" />
+        <input type="text" id="townSearch" placeholder="Enter Town Name" />
         <button id="doSearch">Search</button>
         <button id="doClear">Clear</button>
       </div>
-
       <iframe
         id="mapFrame"
         src="map_with_button.html?cachebust=2"
@@ -91,7 +115,6 @@
 
   <script>
     const container = document.getElementById('container');
-    const infoPanel = document.getElementById('infoPanel');
     const mapFrame  = document.getElementById('mapFrame');
 
     document.getElementById('doSearch').addEventListener('click', () => {
@@ -105,14 +128,14 @@
       container.classList.remove('info-open');
     });
 
-    // Listen for messages from the map iframe
+    // Receive selection events from the map iframe
     window.addEventListener('message', e => {
       const msg = e.data;
       if (msg?.type === 'town-selected') {
         const props = msg.properties;
-        document.getElementById('townName').textContent            = props.Municipality    || 'N/A';
-        document.getElementById('municipalityField').textContent  = props.Municipality    || 'N/A';
-        document.getElementById('communityTypeField').textContent = props.CommunityType   || 'N/A';
+        document.getElementById('townName').textContent            = props.Municipality  || 'N/A';
+        document.getElementById('municipalityField').textContent  = props.Municipality  || 'N/A';
+        document.getElementById('communityTypeField').textContent = props.CommunityType || 'N/A';
         container.classList.add('info-open');
       }
     });
