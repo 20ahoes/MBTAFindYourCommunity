@@ -101,6 +101,25 @@
 
     let currentTown = null;
 
+    function highlightAndZoom(match) {
+      if (!match) return;
+      currentTown = match.properties[nameField];
+
+      const bounds = new mapboxgl.LngLatBounds();
+      const coordinates = match.geometry.type === 'MultiPolygon'
+        ? match.geometry.coordinates[0][0]
+        : match.geometry.coordinates[0];
+
+      coordinates.forEach(coord => bounds.extend(coord));
+      map.fitBounds(bounds, { padding: 40, duration: 1000, maxZoom: defaultZoom });
+
+      map.setPaintProperty(layerId, 'fill-color', [
+        'case',
+        ['==', ['get', nameField], match.properties[nameField]],
+        '#f00', '#ccc'
+      ]);
+    }
+
     map.on('load', () => {
       const fillLayer = map.getStyle().layers.find(l => l.id === layerId && l.type === 'fill');
 
@@ -126,54 +145,19 @@
       });
 
       window.addEventListener("message", function(event) {
-        console.log("📥 Received message:", event.data);
-
         if (event.data?.type === 'search-town') {
           const searchName = event.data.name.trim().toLowerCase();
           const features = map.queryRenderedFeatures({ layers: [layerId] });
 
           const match = features.find(f => f.properties?.[nameField]?.toLowerCase() === searchName);
-
-          if (match) {
-            currentTown = match.properties[nameField];
-
-            const bounds = new mapboxgl.LngLatBounds();
-            const coordinates = match.geometry.type === 'MultiPolygon'
-              ? match.geometry.coordinates[0][0]
-              : match.geometry.coordinates[0];
-
-            coordinates.forEach(coord => bounds.extend(coord));
-            map.fitBounds(bounds, { padding: 40, duration: 1000 });
-
-            map.setPaintProperty(layerId, 'fill-color', [
-              'case',
-              ['==', ['get', nameField], match.properties[nameField]],
-              '#f00', '#ccc'
-            ]);
-          } else {
-            alert("❌ Town not found.");
-          }
+          if (match) highlightAndZoom(match);
+          else alert("❌ Town not found.");
         }
       });
 
       map.on('click', layerId, function(e) {
         if (e.features.length > 0) {
-          const match = e.features[0];
-          currentTown = match.properties[nameField];
-
-          const bounds = new mapboxgl.LngLatBounds();
-          const coordinates = match.geometry.type === 'MultiPolygon'
-            ? match.geometry.coordinates[0][0]
-            : match.geometry.coordinates[0];
-
-          coordinates.forEach(coord => bounds.extend(coord));
-          map.fitBounds(bounds, { padding: 40, duration: 1000 });
-
-          map.setPaintProperty(layerId, 'fill-color', [
-            'case',
-            ['==', ['get', nameField], match.properties[nameField]],
-            '#f00', '#ccc'
-          ]);
+          highlightAndZoom(e.features[0]);
         }
       });
     });
