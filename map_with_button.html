@@ -34,7 +34,7 @@
       z-index: 1;
       pointer-events: none;
     }
-    #toggleMapboxLayer {
+    #toggleMapboxLayer, #clearSelectionButton {
       pointer-events: auto;
       padding: 10px 20px;
       font-size: 16px;
@@ -74,6 +74,7 @@
 
   <div class="top-bar">
     <button id="toggleMapboxLayer">Toggle Municipalities Layer</button>
+    <button id="clearSelectionButton">Clear</button>
   </div>
 
   <div id="map"></div>
@@ -112,7 +113,7 @@
       coordinates.forEach(coord => bounds.extend(coord));
 
       const center = bounds.getCenter();
-      map.flyTo({ center, zoom: defaultZoom, speed: 1.2, essential: true });
+      map.flyTo({ center: center, zoom: defaultZoom, speed: 1.2, essential: true });
 
       map.setPaintProperty(layerId, 'fill-color', [
         'case',
@@ -139,6 +140,10 @@
         const newVis = current === 'none' ? 'visible' : 'none';
         map.setLayoutProperty(fillLayer.id, 'visibility', newVis);
         console.log(`🔄 Layer "${fillLayer.id}" toggled to ${newVis}`);
+      });
+
+      document.getElementById('clearSelectionButton').addEventListener('click', () => {
+        clearSelection();
       });
 
       document.getElementById('homeButton').addEventListener('click', () => {
