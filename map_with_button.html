@@ -8,6 +8,7 @@
   <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
   <script src="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.js"></script>
   <link href="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.css" rel="stylesheet" />
+
   <style>
     body, html {
       margin: 0;
@@ -34,7 +35,7 @@
       z-index: 1;
       pointer-events: none;
     }
-    #toggleMapboxLayer, #clearSelectionButton {
+    #toggleMapboxLayer {
       pointer-events: auto;
       padding: 10px 20px;
       font-size: 16px;
@@ -46,7 +47,6 @@
       cursor: pointer;
       box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
       backdrop-filter: blur(4px);
-      margin: 0 5px;
     }
     #homeButton {
       position: absolute;
@@ -74,7 +74,6 @@
 
   <div class="top-bar">
     <button id="toggleMapboxLayer">Toggle Municipalities Layer</button>
-    <button id="clearSelectionButton">Clear</button>
   </div>
 
   <div id="map"></div>
@@ -85,9 +84,9 @@
     const defaultCenter = [-71.245, 42.254];
     const defaultZoom = 8.0;
     const layerId = 'municipalitiesbycommunitytype-c8ks3h copy';
-    const sourceLayer = 'MunicipalitiesByCommunityType-c8ks3h copy';
     const nameField = 'Municipali';
     const bounds = [[-72.5, 41.5], [-69.5, 43.0]];
+    let currentTown = null;
 
     const map = new mapboxgl.Map({
       container: 'map',
@@ -99,25 +98,26 @@
       maxBounds: bounds
     });
 
-    let currentTown = null;
+    function getPolygonCenter(coords) {
+      let lngSum = 0, latSum = 0, count = 0;
+      coords.flat(2).forEach(([lng, lat]) => {
+        lngSum += lng;
+        latSum += lat;
+        count++;
+      });
+      return [lngSum / count, latSum / count];
+    }
 
-    function highlightAndZoom(match) {
-      if (!match) return;
-      currentTown = match.properties[nameField];
+    function highlightAndZoom(feature) {
+      if (!feature) return;
+      currentTown = feature.properties[nameField];
 
-      const coordinates = match.geometry.type === 'MultiPolygon'
-        ? match.geometry.coordinates.flat(2)
-        : match.geometry.coordinates[0];
-
-      const bounds = new mapboxgl.LngLatBounds();
-      coordinates.forEach(coord => bounds.extend(coord));
-
-      const center = bounds.getCenter();
-      map.flyTo({ center: center, zoom: defaultZoom, speed: 1.2, essential: true });
+      const center = getPolygonCenter(feature.geometry.coordinates);
+      map.flyTo({ center, zoom: defaultZoom + 1, speed: 1.2, essential: true });
 
       map.setPaintProperty(layerId, 'fill-color', [
         'case',
-        ['==', ['get', nameField], match.properties[nameField]],
+        ['==', ['get', nameField], currentTown],
         '#f00', '#ccc'
       ]);
     }
@@ -129,42 +129,30 @@
 
     map.on('load', () => {
       const fillLayer = map.getStyle().layers.find(l => l.id === layerId && l.type === 'fill');
-
-      if (!fillLayer) {
-        console.error("❌ Fill layer not found");
-        return;
-      }
+      if (!fillLayer) return;
 
       document.getElementById('toggleMapboxLayer').addEventListener('click', () => {
-        const current = map.getLayoutProperty(fillLayer.id, 'visibility') || 'visible';
-        const newVis = current === 'none' ? 'visible' : 'none';
-        map.setLayoutProperty(fillLayer.id, 'visibility', newVis);
-        console.log(`🔄 Layer "${fillLayer.id}" toggled to ${newVis}`);
-      });
-
-      document.getElementById('clearSelectionButton').addEventListener('click', () => {
-        clearSelection();
+        const vis = map.getLayoutProperty(layerId, 'visibility') || 'visible';
+        map.setLayoutProperty(layerId, 'visibility', vis === 'none' ? 'visible' : 'none');
       });
 
       document.getElementById('homeButton').addEventListener('click', () => {
         map.flyTo({ center: defaultCenter, zoom: defaultZoom, speed: 1.2, essential: true });
       });
 
-      window.addEventListener("message", function(event) {
-        if (event.data?.type === 'search-town') {
-          const searchName = event.data.name.trim().toLowerCase();
-          const features = map.queryRenderedFeatures({ layers: [layerId] });
-
-          const match = features.find(f => f.properties?.[nameField]?.toLowerCase() === searchName);
-          if (match) highlightAndZoom(match);
-        } else if (event.data?.type === 'clear-town') {
-          clearSelection();
-        }
+      map.on('click', layerId, e => {
+        if (e.features.length > 0) highlightAndZoom(e.features[0]);
       });
 
-      map.on('click', layerId, function(e) {
-        if (e.features.length > 0) {
-          highlightAndZoom(e.features[0]);
+      window.addEventListener("message", event => {
+        const { type, name } = event.data || {};
+        if (type === 'search-town') {
+          const searchName = name?.trim().toLowerCase();
+          const features = map.queryRenderedFeatures({ layers: [layerId] });
+          const match = features.find(f => f.properties?.[nameField]?.toLowerCase() === searchName);
+          if (match) highlightAndZoom(match);
+        } else if (type === 'clear-town') {
+          clearSelection();
         }
       });
     });
