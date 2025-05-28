@@ -4,8 +4,12 @@
   <meta charset="utf-8">
   <title>Map with Toggle, Home & Search</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <!-- Roboto Bold & Material Icons -->
   <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@700&display=swap" rel="stylesheet">
   <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+
+  <!-- Mapbox GL JS -->
   <script src="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.js"></script>
   <link href="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.css" rel="stylesheet" />
 
@@ -22,30 +26,33 @@
       background: linear-gradient(to bottom, rgba(0,0,0,0.5), rgba(0,0,0,0));
       z-index: 1; pointer-events: none;
     }
-    #toggleMapboxLayer {
-      pointer-events: auto; padding: 10px 20px; font-size: 16px; font-weight: 700;
-      background-color: rgba(255,255,255,0.9); color: #005e95; border: none;
-      border-radius: 8px; cursor: pointer; box-shadow: 0 2px 6px rgba(0,0,0,0.3);
-      backdrop-filter: blur(4px);
+    #toggleMapboxLayer, #homeButton {
+      pointer-events: auto;
+      padding: 10px 20px; font-size: 16px; font-weight: 700;
+      background: rgba(255,255,255,0.9); color: #005e95; border: none;
+      border-radius: 8px; cursor: pointer;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.3); backdrop-filter: blur(4px);
     }
+    #toggleMapboxLayer { margin: 0 5px; }
     #homeButton {
-      position: absolute; top: 10px; left: 10px; z-index: 2; padding: 10px;
-      background-color: rgba(255,255,255,0.9); color: #005e95; border: none;
-      border-radius: 8px; cursor: pointer; box-shadow: 0 2px 6px rgba(0,0,0,0.3);
-      backdrop-filter: blur(4px);
+      position: absolute; top: 10px; left: 10px; z-index: 2;
+      padding: 10px; display: flex; align-items: center;
     }
     .material-icons { font-size: 24px; }
   </style>
 </head>
 <body>
+  <!-- Home Button -->
   <button id="homeButton" title="Return to Default View">
     <span class="material-icons">home</span>
   </button>
 
+  <!-- Toggle Layer Button -->
   <div class="top-bar">
     <button id="toggleMapboxLayer">Toggle Municipalities Layer</button>
   </div>
 
+  <!-- Map Container -->
   <div id="map"></div>
 
   <script>
@@ -58,7 +65,7 @@
     const nameField = 'Municipali';
     const bounds = [[-72.5, 41.5], [-69.5, 43.0]];
 
-    // initialize map
+    // Initialize map
     const map = new mapboxgl.Map({
       container: 'map',
       style: 'mapbox://styles/20ahoes/cmb6rnzqp00rs01sddsqq9xtx',
@@ -69,8 +76,39 @@
       maxBounds: bounds
     });
 
-    // add highlight source & layers once map loads
+    // Helper: compute centroid of a Polygon or MultiPolygon
+    function getCentroid(coords, type) {
+      let sumX=0, sumY=0, count=0;
+      const pts = (type==='MultiPolygon')
+        ? coords.flat(2)
+        : coords[0];
+      pts.forEach(([x,y]) => { sumX+=x; sumY+=y; count++; });
+      return [sumX/count, sumY/count];
+    }
+
+    // Highlight + Zoom action
+    function highlightAndZoom(feature) {
+      const geom = feature.geometry;
+      const center = getCentroid(geom.coordinates, geom.type);
+      map.flyTo({ center, zoom: defaultZoom+1, speed: 1.2, essential: true });
+
+      // Show highlight via GeoJSON source
+      map.getSource('highlight-town').setData({
+        type: 'FeatureCollection',
+        features: [feature.toJSON()]
+      });
+    }
+
+    // Clear highlight
+    function clearSelection() {
+      map.getSource('highlight-town').setData({
+        type: 'FeatureCollection',
+        features: []
+      });
+    }
+
     map.on('load', () => {
+      // 1) Add a GeoJSON source + layers for highlight
       map.addSource('highlight-town', {
         type: 'geojson',
         data: { type: 'FeatureCollection', features: [] }
@@ -88,60 +126,26 @@
         paint: { 'line-color': '#FF9800', 'line-width': 2 }
       });
 
-      // toggle base municipalities layer
+      // 2) Toggle municipalities layer
       document.getElementById('toggleMapboxLayer').addEventListener('click', () => {
         const vis = map.getLayoutProperty(layerId, 'visibility') || 'visible';
         map.setLayoutProperty(layerId, 'visibility', vis === 'none' ? 'visible' : 'none');
       });
 
-      // home button
+      // 3) Home button reset
       document.getElementById('homeButton').addEventListener('click', () => {
         map.flyTo({ center: defaultCenter, zoom: defaultZoom, speed: 1.2, essential: true });
       });
 
-      // click on map features
+      // 4) Click-on-map selects town
       map.on('click', layerId, e => {
         if (e.features.length) highlightAndZoom(e.features[0]);
       });
     });
 
-    // compute polygon center (avg of all vertices)
-    function getPolygonCenter(coords) {
-      let lngSum = 0, latSum = 0, count = 0;
-      coords.flat(2).forEach(([lng, lat]) => (lngSum += lng, latSum += lat, count++));
-      return [lngSum / count, latSum / count];
-    }
-
-    // highlight & fit bounds
-    function highlightAndZoom(feature) {
-      const geometry = feature.geometry;
-      const coords = geometry.type === 'MultiPolygon'
-        ? geometry.coordinates.flat(2)
-        : geometry.coordinates[0];
-
-      // fit to full polygon bounds
-      const b = new mapboxgl.LngLatBounds();
-      coords.forEach(c => b.extend(c));
-      map.fitBounds(b, { padding: 40, duration: 1000 });
-
-      // set highlight source data
-      map.getSource('highlight-town').setData({
-        type: 'FeatureCollection',
-        features: [feature.toJSON()]
-      });
-    }
-
-    // clear highlight
-    function clearSelection() {
-      map.getSource('highlight-town').setData({
-        type: 'FeatureCollection',
-        features: []
-      });
-    }
-
-    // listen for search/clear messages
-    window.addEventListener('message', event => {
-      const msg = event.data || {};
+    // Listen for search/clear from parent
+    window.addEventListener('message', e => {
+      const msg = e.data || {};
       if (msg.type === 'search-town') {
         const search = (msg.name||'').trim().toLowerCase();
         const feats = map.querySourceFeatures('composite', { sourceLayer });
