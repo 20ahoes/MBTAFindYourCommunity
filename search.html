@@ -4,46 +4,57 @@
   <meta charset="UTF-8" />
   <title>Search + Info + Map</title>
   <style>
+    /* Full‑screen container */
     html, body {
-      height: 100vh;
       margin: 0;
       padding: 0;
+      height: 100%;
+      overflow: hidden;
       font-family: 'Roboto', sans-serif;
     }
-    /* Container: info panel on left, main on right */
+    /* Wrapper that holds the panel and the main content */
     #container {
-      display: flex;
+      position: relative;
+      width: 100%;
       height: 100%;
-      transition: all 0.5s ease;
     }
-    /* Info panel (left) hidden by default */
+    /* Info panel, off‑screen to the left by default */
     #infoPanel {
-      width: 0;
-      overflow: hidden;
+      position: absolute;
+      top: 0;
+      left: -30%;
+      width: 30%;
+      height: 100%;
       background: #fff;
       box-shadow: 2px 0 6px rgba(0,0,0,0.1);
-      transition: width 0.5s ease;
+      overflow-y: auto;
+      transition: left 0.5s ease;
+      z-index: 5;
     }
-    /* When container has info-open, expand the info panel to 30% */
+    /* When we add .info-open to the container, slide it in */
     #container.info-open #infoPanel {
-      width: 30%;
+      left: 0;
     }
-    #infoPanel .content {
-      padding: 20px;
-    }
-    /* Main area (search bar + map) */
+    /* Main area (search bar + map), fills 100% normally */
     #main {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      transition: flex 0.5s ease;
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      transition: left 0.5s ease, width 0.5s ease;
     }
-    /* When info panel open, shrink main to 70% */
+    /* When the panel is open, push main over 30% and shrink to 70% */
     #container.info-open #main {
-      flex: 0 0 70%;
+      left: 30%;
+      width: 70%;
     }
-    /* Search bar */
+    /* Search bar fixed to top of the main area */
     .search-panel {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
       height: 60px;
       background: #f4f4f4;
       display: flex;
@@ -57,8 +68,8 @@
       flex: 1;
       padding: 8px;
       font-size: 16px;
-      border-radius: 4px;
       border: 1px solid #ccc;
+      border-radius: 4px;
     }
     .search-panel button {
       padding: 8px 16px;
@@ -73,18 +84,23 @@
     .search-panel button:hover {
       background: #003f63;
     }
-    /* Map iframe */
+    /* The map iframe sits beneath the search bar */
     #mapFrame {
-      flex: 1;
-      width: 100%;
+      position: absolute;
+      top: 60px;
+      left: 0;
+      right: 0;
+      bottom: 0;
       border: none;
+      width: 100%;
+      height: calc(100% - 60px);
     }
   </style>
 </head>
 <body>
 
   <div id="container">
-    <!-- Left‐side Info Panel -->
+    <!-- Left‑side Info Panel -->
     <div id="infoPanel">
       <div class="content">
         <h2 id="townName">Town Name</h2>
@@ -101,6 +117,7 @@
         <button id="doSearch">Search</button>
         <button id="doClear">Clear</button>
       </div>
+
       <iframe
         id="mapFrame"
         src="map_with_button.html?cachebust=1"
@@ -113,27 +130,30 @@
     const container = document.getElementById('container');
     const mapFrame  = document.getElementById('mapFrame');
 
+    // Send search request to map iframe
     document.getElementById('doSearch').addEventListener('click', () => {
       const name = document.getElementById('townSearch').value.trim();
       if (!name) return;
       mapFrame.contentWindow.postMessage({ type: 'search-town', name }, '*');
     });
 
+    // Send clear request and hide panel
     document.getElementById('doClear').addEventListener('click', () => {
       mapFrame.contentWindow.postMessage({ type: 'clear-town' }, '*');
       container.classList.remove('info-open');
     });
 
-    // Receive selection events from the map iframe
+    // Listen for town-selected and clear-town messages from the map
     window.addEventListener('message', e => {
       const msg = e.data;
       if (msg?.type === 'town-selected') {
         const props = msg.properties;
-        document.getElementById('townName').textContent            = props.Municipality    || 'N/A';
-        document.getElementById('municipalityField').textContent  = props.Municipality    || 'N/A';
-        document.getElementById('communityTypeField').textContent = props.CommunityType   || 'N/A';
+        document.getElementById('townName').textContent            = props.Municipality  || 'N/A';
+        document.getElementById('municipalityField').textContent  = props.Municipality  || 'N/A';
+        document.getElementById('communityTypeField').textContent = props.CommunityType || 'N/A';
         container.classList.add('info-open');
-      } else if (msg?.type === 'clear-town') {
+      }
+      else if (msg?.type === 'clear-town') {
         container.classList.remove('info-open');
       }
     });
