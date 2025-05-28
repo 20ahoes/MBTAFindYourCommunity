@@ -113,6 +113,7 @@
       width:100%; padding:8px 30px 8px 8px;
       font-size:16px; border:1px solid #ccc; border-radius:4px;
       font-family:'Roboto',sans-serif;
+      box-sizing: border-box; /* ensure padding stays inside */
     }
     .input-wrapper button#clearInput {
       position:absolute; right:8px; top:50%;
@@ -145,18 +146,18 @@
 
   <div id="container">
 
-    <!-- Map legend -->
+    <!-- Map‑side legend -->
     <div id="legendMap" class="legend">
       <h3>MBTA Communities</h3>
       <div class="legend-group">
         <span class="legend-title">Community Types</span>
-        <div class="legend-item"><span class="patch" style="background:#2A6D93"></span>Rapid Transit</div>
-        <div class="legend-item"><span class="patch" style="background:#508EB1"></span>Commuter Rail</div>
-        <div class="legend-item"><span class="patch" style="background:#B4B474"></span>Adjacent community</div>
-        <div class="legend-item"><span class="patch" style="background:#E3E3B6"></span>Adjacent small town</div>
+        <div class="legend-item"><span class="patch" style="background:#2A6D93"></span>Rapid Transit</div>
+        <div class="legend-item"><span class="patch" style="background:#508EB1"></span>Commuter Rail</div>
+        <div class="legend-item"><span class="patch" style="background:#B4B474"></span>Adjacent community</div>
+        <div class="legend-item"><span class="patch" style="background:#E3E3B6"></span>Adjacent small town</div>
       </div>
       <div class="legend-group exempt">
-        <span class="legend-title">Exempt Communities</span>
+        <span class="legend-title">Exempt Communities</span>
         <div class="legend-item"><span class="patch" style="background:#9C9C9C"></span></div>
       </div>
     </div>
@@ -167,26 +168,26 @@
       <div class="content">
         <h2 id="townName">Town Name</h2>
         <div class="small-info">
-          <p><span class="title">Area in Sq. Miles:</span><span id="areaField"></span></p>
-          <p><span class="title">Population (2020):</span><span id="popField"></span></p>
+          <p><span class="title">Area in Sq. Miles:</span><span id="areaField"></span></p>
+          <p><span class="title">Population (2020):</span><span id="popField"></span></p>
         </div>
         <div class="big-info">
-          <p><span class="title">Community Type:</span><span id="commField"></span></p>
-          <p><span class="title">Unit Capacity Requirement:</span><span id="unitField"></span></p>
+          <p><span class="title">Community Type:</span><span id="commField"></span></p>
+          <p><span class="title">Unit Capacity Requirement:</span><span id="unitField"></span></p>
         </div>
 
-        <!-- Panel legend -->
+        <!-- Panel‑side legend -->
         <div id="legendPanel" class="legend">
           <h3>MBTA Communities</h3>
           <div class="legend-group">
-            <span class="legend-title">Community Types</span>
-            <div class="legend-item"><span class="patch" style="background:#2A6D93"></span>Rapid Transit</div>
-            <div class="legend-item"><span class="patch" style="background:#508EB1"></span>Commuter Rail</div>
-            <div class="legend-item"><span class="patch" style="background:#B4B474"></span>Adjacent community</div>
-            <div class="legend-item"><span class="patch" style="background:#E3E3B6"></span>Adjacent small town</div>
+            <span class="legend-title">Community Types</span>
+            <div class="legend-item"><span class="patch" style="background:#2A6D93"></span>Rapid Transit</div>
+            <div class="legend-item"><span class="patch" style="background:#508EB1"></span>Commuter Rail</div>
+            <div class="legend-item"><span class="patch" style="background:#B4B474"></span>Adjacent community</div>
+            <div class="legend-item"><span class="patch" style="background:#E3E3B6"></span>Adjacent small town</div>
           </div>
           <div class="legend-group exempt">
-            <span class="legend-title">Exempt Communities</span>
+            <span class="legend-title">Exempt Communities</span>
             <div class="legend-item"><span class="patch" style="background:#9C9C9C"></span></div>
           </div>
         </div>
@@ -218,7 +219,6 @@
           btnClearIn = document.getElementById('clearInput'),
           btnClose   = document.getElementById('closePanel');
 
-    // Run search
     function runSearch() {
       const name = input.value.trim();
       if (!name) return;
@@ -227,11 +227,14 @@
     btnSearch.addEventListener('click', runSearch);
     input.addEventListener('keydown', e => {
       if (e.key === 'Enter') runSearch();
-      // toggle clear icon
       setTimeout(toggleClearIcon, 0);
     });
 
-    // Clear input text
+    function clearAll() {
+      mapFrame.contentWindow.postMessage({ type:'clear-town' }, '*');
+      container.classList.remove('info-open');
+    }
+
     function toggleClearIcon() {
       btnClearIn.style.display = input.value ? 'block' : 'none';
     }
@@ -239,16 +242,11 @@
       input.value = '';
       toggleClearIcon();
       input.focus();
+      clearAll();
     });
 
-    // Panel close
-    function clearAll() {
-      mapFrame.contentWindow.postMessage({ type:'clear-town' }, '*');
-      container.classList.remove('info-open');
-    }
     btnClose.addEventListener('click', clearAll);
 
-    // Listen for messages
     window.addEventListener('message', e => {
       const msg = e.data;
       if (msg?.type === 'town-selected') {
@@ -265,7 +263,7 @@
       }
     });
 
-    // Initialize clear icon on load
+    // initialize clear‑input visibility
     toggleClearIcon();
   </script>
 </body>
