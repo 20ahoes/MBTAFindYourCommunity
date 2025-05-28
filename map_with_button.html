@@ -5,7 +5,7 @@
   <title>Map with Fade‑Others & Clear to Home</title>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
 
-  <!-- Fonts & Icons -->
+  <!-- Roboto & Icons -->
   <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@700&display=swap" rel="stylesheet"/>
   <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet"/>
 
@@ -34,46 +34,43 @@
 </head>
 <body>
 
-  <!-- Home (also Clear) & Toggle Base Layer -->
   <button id="homeButton" title="Clear & Home">
     <span class="material-icons">home</span>
   </button>
   <div class="top-bar">
     <button id="toggleMapboxLayer">Toggle Municipalities Layer</button>
   </div>
-
-  <!-- Map Container -->
   <div id="map"></div>
 
   <script>
     mapboxgl.accessToken = 'pk.eyJ1IjoiMjBhaG9lcyIsImEiOiJjbWFwazQxbDgwaXMzMmxwbzJmNmhidm0yIn0.NileAvzC_m2asZI3tLIqUw';
 
-    // Config
+    // CONFIG
     const defaultCenter    = [-71.245, 42.254],
           defaultZoom      = 8,
           vectorLayerId    = 'municipalitiesbycommunitytype-c8ks3h copy',
-          tileNameField    = 'Municipali',      // vector tile field
-          geojsonNameField = 'Municipality',    // full GeoJSON field
+          tileNameField    = 'Municipali',
+          geojsonNameField = 'Municipality',
           bounds           = [[-72.5,41.5],[-69.5,43.0]],
           geojsonURL       = './MunicipalitiesByCommunityType.geojson';
 
     let municipalitiesData = [];
 
-    // Init map
+    // INIT MAP
     const map = new mapboxgl.Map({
-      container: 'map',
-      style: 'mapbox://styles/20ahoes/cmb6rnzqp00rs01sddsqq9xtx',
-      center: defaultCenter,
-      zoom: defaultZoom,
-      minZoom: defaultZoom,
-      maxZoom: 22,
-      maxBounds: bounds
+      container:'map',
+      style:'mapbox://styles/20ahoes/cmb6rnzqp00rs01sddsqq9xtx',
+      center:defaultCenter,
+      zoom:defaultZoom,
+      minZoom:defaultZoom,
+      maxZoom:22,
+      maxBounds:bounds
     });
 
-    // Helpers
+    // UTILS
     function getFeatureBounds(feature) {
       const geom = feature.geometry;
-      const pts = (geom.type === 'MultiPolygon')
+      const pts = geom.type==='MultiPolygon'
         ? geom.coordinates.flat(2)
         : geom.coordinates[0];
       return pts.reduce(
@@ -83,103 +80,100 @@
     }
 
     function selectFeature(feature) {
-      // Zoom to full polygon
+      console.log('→ selectFeature()', feature.properties[geojsonNameField]);
+
+      // ZOOM
       const bb = getFeatureBounds(feature);
-      map.fitBounds(bb, { padding: 40, duration: 800 });
+      map.fitBounds(bb, { padding:40, duration:800 });
 
-      // Fade out others
-      map.setFilter('fade-layer', ['!=', ['get', geojsonNameField], feature.properties[geojsonNameField]]);
-      map.setLayoutProperty('fade-layer', 'visibility', 'visible');
+      // FADE OTHERS
+      map.setFilter('fade-layer',
+        ['!=', ['get', geojsonNameField], feature.properties[geojsonNameField]]
+      );
+      map.setLayoutProperty('fade-layer','visibility','visible');
 
-      // Highlight selected
+      // HIGHLIGHT
       map.getSource('highlight-town').setData({
-        type: 'FeatureCollection',
-        features: [feature]
+        type:'FeatureCollection',
+        features:[ feature ]
       });
     }
 
     function clearSelection() {
-      // Hide fade
-      map.setLayoutProperty('fade-layer', 'visibility', 'none');
-      // Clear highlight
-      map.getSource('highlight-town').setData({ type:'FeatureCollection', features:[] });
-      // Fly back home
-      map.flyTo({ center: defaultCenter, zoom: defaultZoom, speed:1.2, essential:true });
+      console.log('→ clearSelection()');
+      map.setLayoutProperty('fade-layer','visibility','none');
+      map.getSource('highlight-town').setData({
+        type:'FeatureCollection', features:[]
+      });
+      map.flyTo({ center:defaultCenter, zoom:defaultZoom, speed:1.2, essential:true });
     }
 
-    // Map setup
     map.on('load', () => {
-      // 1) Load full GeoJSON into memory
+      console.log('⏳ map.load — fetching municipalities GeoJSON…');
       fetch(geojsonURL)
-        .then(r => r.ok ? r.json() : Promise.reject(r.status))
-        .then(data => municipalitiesData = data.features)
-        .catch(err => console.error('GeoJSON load failed:', err));
+        .then(r => {
+          console.log('   fetch status', r.status);
+          return r.json();
+        })
+        .then(data => {
+          municipalitiesData = data.features;
+          console.log('   Loaded features:', municipalitiesData.length);
+        })
+        .catch(err => console.error('❌ fetch error:', err));
 
-      // 2) Add a source & layer for fading all towns
-      map.addSource('municipalities-full', {
-        type: 'geojson',
-        data: geojsonURL
-      });
+      // FADE LAYER
+      map.addSource('municipalities-full',{ type:'geojson', data:geojsonURL });
       map.addLayer({
-        id: 'fade-layer',
-        type: 'fill',
-        source: 'municipalities-full',
-        paint: {
-          'fill-color': '#888',
-          'fill-opacity': 0.5
-        },
-        layout: { visibility: 'none' }
+        id:'fade-layer', type:'fill', source:'municipalities-full',
+        paint:{ 'fill-color':'#888','fill-opacity':0.5 },
+        layout:{ visibility:'none' }
       });
 
-      // 3) Add highlight source + layers
-      map.addSource('highlight-town', {
-        type: 'geojson',
-        data: { type: 'FeatureCollection', features: [] }
+      // HIGHLIGHT LAYERS
+      map.addSource('highlight-town',{ type:'geojson', data:{ type:'FeatureCollection', features:[] } });
+      map.addLayer({
+        id:'highlight-fill', type:'fill', source:'highlight-town',
+        paint:{ 'fill-color':'#FFEB3B','fill-opacity':0.8 }
       });
       map.addLayer({
-        id: 'highlight-fill',
-        type: 'fill',
-        source: 'highlight-town',
-        paint: { 'fill-color':'#FFEB3B','fill-opacity':0.8 }
-      });
-      map.addLayer({
-        id: 'highlight-line',
-        type: 'line',
-        source: 'highlight-town',
-        paint: { 'line-color':'#FF9800','line-width':2 }
+        id:'highlight-line', type:'line', source:'highlight-town',
+        paint:{ 'line-color':'#FF9800','line-width':2 }
       });
 
-      // 4) Toggle base tile layer
+      // TOGGLE BASE LAYER
       document.getElementById('toggleMapboxLayer').onclick = () => {
-        const v = map.getLayoutProperty(vectorLayerId,'visibility') || 'visible';
+        const v = map.getLayoutProperty(vectorLayerId,'visibility')||'visible';
         map.setLayoutProperty(vectorLayerId,'visibility', v==='none'?'visible':'none');
       };
 
-      // 5) Home button = Clear + reset view
+      // HOME = CLEAR
       document.getElementById('homeButton').onclick = clearSelection;
 
-      // 6) Click on a town in the vector‑tile layer
+      // CLICK VECTOR TILE
       map.on('click', vectorLayerId, e => {
+        console.log('📍 click:', e.features[0].properties[tileNameField]);
         if (!municipalitiesData.length) return;
-        const clickedName = e.features[0].properties[tileNameField];
+        const clicked = e.features[0].properties[tileNameField];
         const match = municipalitiesData.find(
-          f => f.properties[geojsonNameField]?.toLowerCase() === clickedName.toLowerCase()
+          f => f.properties[geojsonNameField]?.toLowerCase()===clicked.toLowerCase()
         );
         if (match) selectFeature(match);
       });
     });
 
-    // 7) Listen for Search/Clear messages
+    // MESSAGE LISTENER
     window.addEventListener('message', e => {
+      console.log('📨 message received:', e.data);
       if (!municipalitiesData.length) return;
-      const { type, name } = e.data || {};
-      if (type === 'search-town') {
+      const { type, name } = e.data;
+      if (type==='search-town') {
+        console.log('   search-town →', name);
         const match = municipalitiesData.find(
-          f => f.properties[geojsonNameField]?.toLowerCase() === name.trim().toLowerCase()
+          f => f.properties[geojsonNameField]?.toLowerCase()===name.trim().toLowerCase()
         );
         if (match) selectFeature(match);
       }
-      else if (type === 'clear-town') {
+      else if (type==='clear-town') {
         clearSelection();
       }
     });
