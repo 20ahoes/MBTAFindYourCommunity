@@ -2,10 +2,10 @@
 <html>
 <head>
   <meta charset="utf-8">
-  <title>Map with Full‑GeoJSON Highlight</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Map with Fade‑Others Highlight</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
 
-  <!-- Fonts & Icons -->
+  <!-- Roboto & Icons -->
   <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@700&display=swap" rel="stylesheet"/>
   <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet"/>
 
@@ -19,7 +19,7 @@
     .top-bar {
       position:absolute; top:0; left:0; width:100%; height:60px;
       display:flex; justify-content:center; align-items:center;
-      background:linear-gradient(to bottom,rgba(0,0,0,0.5),rgba(0,0,0,0));
+      background: linear-gradient(to bottom, rgba(0,0,0,0.5), rgba(0,0,0,0));
       pointer-events:none; z-index:1;
     }
     #toggleMapboxLayer, #homeButton {
@@ -34,7 +34,7 @@
 </head>
 <body>
 
-  <!-- Home & Toggle Buttons -->
+  <!-- Home & Toggle -->
   <button id="homeButton" title="Default View">
     <span class="material-icons">home</span>
   </button>
@@ -42,24 +42,23 @@
     <button id="toggleMapboxLayer">Toggle Municipalities Layer</button>
   </div>
 
-  <!-- Map Container -->
+  <!-- Map -->
   <div id="map"></div>
 
   <script>
-    // --- CONFIGURATION ---
     mapboxgl.accessToken = 'pk.eyJ1IjoiMjBhaG9lcyIsImEiOiJjbWFwazQxbDgwaXMzMmxwbzJmNmhidm0yIn0.NileAvzC_m2asZI3tLIqUw';
-    const defaultCenter   = [-71.245, 42.254];
-    const defaultZoom     = 8;
-    const vectorLayerId   = 'municipalitiesbycommunitytype-c8ks3h copy';
-    const tileNameField   = 'Municipali';      // the field in the vector‑tile layer
-    const geojsonNameField= 'Municipality';    // the field in your full GeoJSON
-    const bounds          = [[-72.5,41.5],[-69.5,43.0]];
-    const geojsonURL      = './MunicipalitiesByCommunityType.geojson';
 
-    // will hold full‑geojson features once loaded
-    let municipalitiesData = null;
+    const defaultCenter    = [-71.245, 42.254],
+          defaultZoom      = 8,
+          vectorLayerId    = 'municipalitiesbycommunitytype-c8ks3h copy',
+          tileNameField    = 'Municipali',       // field in vector‑tile layer
+          geojsonNameField = 'Municipality',     // field in full GEOJSON
+          bounds           = [[-72.5,41.5],[-69.5,43.0]],
+          geojsonURL       = './MunicipalitiesByCommunityType.geojson';
 
-    // initialize the map
+    let municipalitiesData = [];
+
+    // init map
     const map = new mapboxgl.Map({
       container: 'map',
       style: 'mapbox://styles/20ahoes/cmb6rnzqp00rs01sddsqq9xtx',
@@ -70,10 +69,10 @@
       maxBounds: bounds
     });
 
-    // compute full bounding box of a feature
+    // get full-bounds of any feature
     function getFeatureBounds(feature) {
       const geom = feature.geometry;
-      const pts = (geom.type === 'MultiPolygon')
+      const pts  = geom.type === 'MultiPolygon'
         ? geom.coordinates.flat(2)
         : geom.coordinates[0];
       return pts.reduce(
@@ -82,118 +81,108 @@
       );
     }
 
-    // highlight & zoom to a full‑GeoJSON feature
-    function highlightFeature(feature) {
-      console.log('🔔 highlightFeature()', feature.properties[geojsonNameField]);
+    // highlight + fade others + zoom
+    function selectFeature(feature) {
+      // 1) Zoom to full polygon
       const bb = getFeatureBounds(feature);
-      map.fitBounds(bb, { padding: 40, duration: 800 });
+      map.fitBounds(bb, { padding:40, duration:800 });
+
+      // 2) Show fade-layer: all except this one
+      map.setFilter('fade-layer', ['!=', ['get', geojsonNameField], feature.properties[geojsonNameField]]);
+      map.setLayoutProperty('fade-layer','visibility','visible');
+
+      // 3) Show highlight on this polygon
       map.getSource('highlight-town').setData({
         type: 'FeatureCollection',
         features: [feature]
       });
     }
 
-    // clear the highlight layer
-    function clearHighlight() {
-      console.log('🧹 clearHighlight()');
+    // clear both highlight & fade, then fly home
+    function clearSelection() {
+      map.setLayoutProperty('fade-layer','visibility','none');
       map.getSource('highlight-town').setData({
         type: 'FeatureCollection',
         features: []
       });
+      map.flyTo({ center: defaultCenter, zoom: defaultZoom, speed:1.2, essential:true });
     }
 
-    // wait for the map to load
     map.on('load', () => {
-      console.log('🗺️ Map loaded — fetching full GeoJSON…');
-
-      // 1) fetch the complete municipalities GeoJSON
+      // 1) fetch full GEOJSON into memory
       fetch(geojsonURL)
-        .then(r => {
-          console.log('   GEOJSON fetch status:', r.status);
-          return r.json();
-        })
-        .then(data => {
-          municipalitiesData = data.features;
-          console.log('   Loaded features:', municipalitiesData.length);
-        })
-        .catch(err => console.error('❌ GeoJSON load error:', err));
+        .then(r=>r.ok ? r.json() : Promise.reject(r.status))
+        .then(data => municipalitiesData = data.features)
+        .catch(e=>console.error('GeoJSON load failed', e));
 
-      // 2) add a GeoJSON source & layers for highlighting
+      // 2) add source for full municipalities
+      map.addSource('municipalities-full-src', {
+        type:'geojson',
+        data: geojsonURL
+      });
+
+      // 3) add fade-layer (hidden by default)
+      map.addLayer({
+        id: 'fade-layer',
+        type: 'fill',
+        source: 'municipalities-full-src',
+        paint: {
+          'fill-color': '#888',
+          'fill-opacity': 0.5
+        },
+        layout: {
+          visibility: 'none'
+        }
+      }, 'highlight-fill'); // insert below highlight-fill
+
+      // 4) highlight source & layers
       map.addSource('highlight-town', {
-        type: 'geojson',
-        data: { type: 'FeatureCollection', features: [] }
+        type:'geojson',
+        data: { type:'FeatureCollection', features:[] }
       });
       map.addLayer({
         id: 'highlight-fill',
         type: 'fill',
         source: 'highlight-town',
-        paint: {
-          'fill-color': '#FFEB3B',
-          'fill-opacity': 0.6
-        }
+        paint: { 'fill-color':'#FFEB3B','fill-opacity':0.8 }
       });
       map.addLayer({
         id: 'highlight-line',
         type: 'line',
         source: 'highlight-town',
-        paint: {
-          'line-color': '#FF9800',
-          'line-width': 2
-        }
+        paint: { 'line-color':'#FF9800','line-width':2 }
       });
 
-      // 3) wire up the Toggle button
+      // 5) UI buttons
       document.getElementById('toggleMapboxLayer').onclick = () => {
-        const v = map.getLayoutProperty(vectorLayerId, 'visibility') || 'visible';
-        map.setLayoutProperty(vectorLayerId, 'visibility', v === 'none' ? 'visible' : 'none');
+        const v = map.getLayoutProperty(vectorLayerId,'visibility')||'visible';
+        map.setLayoutProperty(vectorLayerId,'visibility', v==='none'?'visible':'none');
       };
+      document.getElementById('homeButton').onclick = clearSelection;
 
-      // 4) wire up the Home button
-      document.getElementById('homeButton').onclick = () => {
-        map.flyTo({ center: defaultCenter, zoom: defaultZoom, essential: true });
-      };
-
-      // 5) clicking on a vector‑tile polygon
+      // 6) click on vector‑tile layer
       map.on('click', vectorLayerId, e => {
-        console.log('📍 vector-tile click', e.features[0].properties[tileNameField]);
-        if (!municipalitiesData) {
-          console.warn('➡️ Full GeoJSON not loaded yet');
-          return;
-        }
-        const clickedName = e.features[0].properties[tileNameField];
+        if (!municipalitiesData.length) return;
+        const clicked = e.features[0].properties[tileNameField];
         const match = municipalitiesData.find(
-          f => f.properties[geojsonNameField]?.toLowerCase() === clickedName.toLowerCase()
+          f => f.properties[geojsonNameField]?.toLowerCase() === clicked.toLowerCase()
         );
-        if (match) {
-          highlightFeature(match);
-        } else {
-          console.warn('   No full-GeoJSON match for', clickedName);
-        }
+        if (match) selectFeature(match);
       });
     });
 
-    // 6) listen for postMessages from search.html
+    // 7) listen for Search/Clear messages
     window.addEventListener('message', e => {
-      console.log('📨 message received:', e.data);
-      if (!municipalitiesData) {
-        console.warn('➡️ Full GeoJSON not loaded yet');
-        return;
-      }
+      if (!municipalitiesData.length) return;
       const { type, name } = e.data || {};
-      if (type === 'search-town') {
-        console.log('🔎 search-town:', name);
-        const term = name.trim().toLowerCase();
+      if (type==='search-town') {
         const match = municipalitiesData.find(
-          f => f.properties[geojsonNameField]?.toLowerCase() === term
+          f => f.properties[geojsonNameField]?.toLowerCase() === name.trim().toLowerCase()
         );
-        if (match) {
-          highlightFeature(match);
-        } else {
-          console.warn('   No match for search term', term);
-        }
+        if (match) selectFeature(match);
       }
-      else if (type === 'clear-town') {
-        clearHighlight();
+      else if (type==='clear-town') {
+        clearSelection();
       }
     });
   </script>
