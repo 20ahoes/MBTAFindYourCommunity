@@ -3,33 +3,188 @@
 <head>
   <meta charset="utf-8">
   <title>Map with Fade & Notify</title>
-  <!-- [styles & Mapbox includes same as before] -->
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+
+  <!-- Roboto & Material Icons -->
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@700&display=swap" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet"/>
+
+  <!-- Mapbox GL JS -->
+  <script src="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.js"></script>
+  <link href="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.css" rel="stylesheet"/>
+
+  <style>
+    body, html { margin:0; padding:0; height:100%; font-family:'Roboto',sans-serif; }
+    #map { position:absolute; top:0; bottom:0; width:100%; }
+    .top-bar {
+      position:absolute; top:0; left:0; width:100%; height:60px;
+      display:flex; justify-content:center; align-items:center;
+      background: linear-gradient(to bottom, rgba(0,0,0,0.5), rgba(0,0,0,0));
+      pointer-events:none; z-index:1;
+    }
+    #toggleMapboxLayer, #homeButton {
+      pointer-events:auto; padding:10px 20px; font-size:16px; font-weight:700;
+      background:rgba(255,255,255,0.9); color:#005e95; border:none; border-radius:8px;
+      cursor:pointer; box-shadow:0 2px 6px rgba(0,0,0,0.3); backdrop-filter:blur(4px);
+    }
+    #toggleMapboxLayer { margin:0 5px; }
+    #homeButton { position:absolute; top:10px; left:10px; z-index:2; }
+    .material-icons { font-size:24px; }
+  </style>
 </head>
 <body>
-  <!-- [buttons and #map container as before] -->
+
+  <!-- Home (also Clear) & Toggle Buttons -->
+  <button id="homeButton" title="Clear & Home">
+    <span class="material-icons">home</span>
+  </button>
+  <div class="top-bar">
+    <button id="toggleMapboxLayer">Toggle Municipalities Layer</button>
+  </div>
+
+  <!-- Map Container -->
+  <div id="map"></div>
 
   <script>
-    // [your existing init, fetch geojson, fade-layer, highlight-layer code…]
+    mapboxgl.accessToken = 'pk.eyJ1IjoiMjBhaG9lcyIsImEiOiJjbWFwazQxbDgwaXMzMmxwbzJmNmhidm0yIn0.NileAvzC_m2asZI3tLIqUw';
 
+    // Configuration
+    const defaultCenter    = [-71.245, 42.254],
+          defaultZoom      = 8,
+          vectorLayerId    = 'municipalitiesbycommunitytype-c8ks3h copy',
+          tileNameField    = 'Municipali',      // vector‑tile attribute
+          geojsonNameField = 'Municipality',    // full‑GeoJSON attribute
+          bounds           = [[-72.5,41.5],[-69.5,43.0]],
+          geojsonURL       = './MunicipalitiesByCommunityType.geojson';
+
+    let municipalitiesData = [];
+
+    // Initialize the map
+    const map = new mapboxgl.Map({
+      container: 'map',
+      style: 'mapbox://styles/20ahoes/cmb6rnzqp00rs01sddsqq9xtx',
+      center: defaultCenter,
+      zoom: defaultZoom,
+      minZoom: defaultZoom,
+      maxZoom: 22,
+      maxBounds: bounds
+    });
+
+    // Compute full bounds of a polygon/MultiPolygon feature
+    function getFeatureBounds(feature) {
+      const geom = feature.geometry;
+      const pts = geom.type === 'MultiPolygon'
+        ? geom.coordinates.flat(2)
+        : geom.coordinates[0];
+      return pts.reduce(
+        (b, c) => b.extend(c),
+        new mapboxgl.LngLatBounds()
+      );
+    }
+
+    // Highlight & fade others & notify parent
     function selectFeature(feature) {
-      // …zoom & fade & highlight as before…
+      // Zoom to full extent
+      const bb = getFeatureBounds(feature);
+      map.fitBounds(bb, { padding: 40, duration: 800 });
 
-      // then tell the parent which town was selected
+      // Fade out all others
+      map.setFilter('fade-layer',
+        ['!=', ['get', geojsonNameField], feature.properties[geojsonNameField]]
+      );
+      map.setLayoutProperty('fade-layer','visibility','visible');
+
+      // Highlight chosen feature
+      map.getSource('highlight-town').setData({
+        type: 'FeatureCollection',
+        features: [feature]
+      });
+
+      // Notify the parent so it can open the info panel
       window.parent.postMessage({
         type: 'town-selected',
         properties: feature.properties
       }, '*');
     }
 
+    // Clear fades & highlights & reset view
+    function clearSelection() {
+      map.setLayoutProperty('fade-layer','visibility','none');
+      map.getSource('highlight-town').setData({
+        type:'FeatureCollection', features:[]
+      });
+      map.flyTo({ center: defaultCenter, zoom: defaultZoom, speed: 1.2, essential: true });
+      // Also notify parent to close info panel
+      window.parent.postMessage({ type:'clear-town' }, '*');
+    }
+
+    map.on('load', () => {
+      // 1) Load full GeoJSON list into memory
+      fetch(geojsonURL)
+        .then(r => r.ok ? r.json() : Promise.reject(r.status))
+        .then(data => municipalitiesData = data.features)
+        .catch(err => console.error('GeoJSON load failed:', err));
+
+      // 2) Add fade‑others layer (hidden by default)
+      map.addSource('municipalities-full', { type:'geojson', data: geojsonURL });
+      map.addLayer({
+        id: 'fade-layer',
+        type: 'fill',
+        source: 'municipalities-full',
+        paint: { 'fill-color':'#888', 'fill-opacity':0.5 },
+        layout: { visibility: 'none' }
+      });
+
+      // 3) Add highlight source & layers
+      map.addSource('highlight-town', {
+        type:'geojson',
+        data: { type:'FeatureCollection', features: [] }
+      });
+      map.addLayer({
+        id: 'highlight-fill',
+        type: 'fill',
+        source: 'highlight-town',
+        paint: { 'fill-color':'#FFEB3B','fill-opacity':0.8 }
+      });
+      map.addLayer({
+        id: 'highlight-line',
+        type: 'line',
+        source: 'highlight-town',
+        paint: { 'line-color':'#FF9800','line-width':2 }
+      });
+
+      // 4) Wire up the Toggle button
+      document.getElementById('toggleMapboxLayer').onclick = () => {
+        const v = map.getLayoutProperty(vectorLayerId,'visibility') || 'visible';
+        map.setLayoutProperty(vectorLayerId,'visibility', v === 'none' ? 'visible' : 'none');
+      };
+      // 5) Wire up Home (Clear)
+      document.getElementById('homeButton').onclick = clearSelection;
+
+      // 6) Clicking the base vector layer
+      map.on('click', vectorLayerId, e => {
+        if (!municipalitiesData.length) return;
+        const clickedName = e.features[0].properties[tileNameField];
+        const match = municipalitiesData.find(
+          f => f.properties[geojsonNameField]?.toLowerCase() === clickedName.toLowerCase()
+        );
+        if (match) selectFeature(match);
+      });
+    });
+
+    // 7) Listen for Search/Clear messages from parent
     window.addEventListener('message', e => {
-      if (e.data?.type === 'search-town') {
-        // …find the match…
+      const msg = e.data;
+      if (!municipalitiesData.length) return;
+      if (msg?.type === 'search-town') {
+        const term = msg.name.trim().toLowerCase();
+        const match = municipalitiesData.find(
+          f => f.properties[geojsonNameField]?.toLowerCase() === term
+        );
         if (match) selectFeature(match);
       }
-      else if (e.data?.type === 'clear-town') {
+      else if (msg?.type === 'clear-town') {
         clearSelection();
-        // also hide info on parent
-        window.parent.postMessage({ type:'clear-town' }, '*');
       }
     });
   </script>
