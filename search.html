@@ -6,18 +6,17 @@
   <style>
     html, body {
       height: 100vh;
-      margin: 0; padding: 0;
+      margin: 0;
+      padding: 0;
       font-family: 'Roboto', sans-serif;
     }
-
-    /* Container holds the info panel on the left and main content on the right */
+    /* Container: info panel on left, main on right */
     #container {
       display: flex;
       height: 100%;
       transition: all 0.5s ease;
     }
-
-    /* Info panel (hidden by default) */
+    /* Info panel (left) hidden by default */
     #infoPanel {
       width: 0;
       overflow: hidden;
@@ -25,13 +24,13 @@
       box-shadow: 2px 0 6px rgba(0,0,0,0.1);
       transition: width 0.5s ease;
     }
-    #infoPanel.open {
+    /* When container has info-open, expand the info panel to 30% */
+    #container.info-open #infoPanel {
       width: 30%;
     }
     #infoPanel .content {
       padding: 20px;
     }
-
     /* Main area (search bar + map) */
     #main {
       flex: 1;
@@ -39,11 +38,10 @@
       flex-direction: column;
       transition: flex 0.5s ease;
     }
-    /* When panel is open, shrink main to 70% */
+    /* When info panel open, shrink main to 70% */
     #container.info-open #main {
       flex: 0 0 70%;
     }
-
     /* Search bar */
     .search-panel {
       height: 60px;
@@ -75,14 +73,12 @@
     .search-panel button:hover {
       background: #003f63;
     }
-
     /* Map iframe */
     #mapFrame {
       flex: 1;
       width: 100%;
       border: none;
     }
-
   </style>
 </head>
 <body>
@@ -98,7 +94,7 @@
       </div>
     </div>
 
-    <!-- Main Content: Search Bar + Map -->
+    <!-- Main (search + map) -->
     <div id="main">
       <div class="search-panel">
         <input type="text" id="townSearch" placeholder="Enter Town Name" />
@@ -107,7 +103,7 @@
       </div>
       <iframe
         id="mapFrame"
-        src="map_with_button.html?cachebust=2"
+        src="map_with_button.html?cachebust=1"
         title="Map View"
       ></iframe>
     </div>
@@ -133,10 +129,12 @@
       const msg = e.data;
       if (msg?.type === 'town-selected') {
         const props = msg.properties;
-        document.getElementById('townName').textContent            = props.Municipality  || 'N/A';
-        document.getElementById('municipalityField').textContent  = props.Municipality  || 'N/A';
-        document.getElementById('communityTypeField').textContent = props.CommunityType || 'N/A';
+        document.getElementById('townName').textContent            = props.Municipality    || 'N/A';
+        document.getElementById('municipalityField').textContent  = props.Municipality    || 'N/A';
+        document.getElementById('communityTypeField').textContent = props.CommunityType   || 'N/A';
         container.classList.add('info-open');
+      } else if (msg?.type === 'clear-town') {
+        container.classList.remove('info-open');
       }
     });
   </script>
