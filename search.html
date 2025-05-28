@@ -4,35 +4,57 @@
   <meta charset="UTF-8" />
   <title>Search + Info + Map</title>
   <style>
-    html, body { height:100vh; margin:0; font-family:'Roboto',sans-serif; }
-    #container { display:flex; height:100%; transition: all 0.5s ease; }
-    /* info panel hidden by default */
+    html, body { height:100vh; margin:0; padding:0; font-family:'Roboto',sans-serif; }
+    #container { display:flex; height:100%; transition: all .5s ease; }
+    /* Info panel (hidden by default) */
     #infoPanel {
-      width:0; overflow:hidden;
-      background:#fff; box-shadow:2px 0 6px rgba(0,0,0,0.1);
-      transition: width 0.5s ease;
+      width: 0;
+      overflow: hidden;
+      background: #fff;
+      box-shadow: 2px 0 6px rgba(0,0,0,0.1);
+      transition: width .5s ease;
     }
-    #infoPanel.open { width:30%; }
-    #infoPanel .content { padding:20px; }
-    #main {
-      flex:1; display:flex; flex-direction:column;
-    }
+    #infoPanel.open { width: 30%; }
+    #infoPanel .content { padding: 20px; }
+    /* Main (search + map) */
+    #main { flex: 1; display: flex; flex-direction: column; }
     .search-panel {
-      height:60px; background:#f4f4f4;
-      display:flex; align-items:center; padding:0 20px; gap:10px;
-      box-shadow:0 2px 4px rgba(0,0,0,0.1); z-index:10;
+      height: 60px;
+      background: #f4f4f4;
+      display: flex;
+      align-items: center;
+      padding: 0 20px;
+      gap: 10px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      z-index: 10;
     }
-    .search-panel input { flex:1; padding:8px; font-size:16px; border:1px solid #ccc; border-radius:4px; }
+    .search-panel input {
+      flex: 1;
+      padding: 8px;
+      font-size: 16px;
+      border-radius: 4px;
+      border: 1px solid #ccc;
+    }
     .search-panel button {
-      padding:8px 16px; font-size:16px; font-weight:700;
-      background:#005e95; color:#fff; border:none; border-radius:4px; cursor:pointer;
+      padding: 8px 16px;
+      font-size: 16px;
+      font-weight: bold;
+      background: #005e95;
+      color: #fff;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
     }
-    .search-panel button:hover { background:#003f63; }
+    .search-panel button:hover { background: #003f63; }
+    /* Map iframe */
     #mapFrame {
-      flex:1; border:none; transition: all 0.5s ease;
+      flex: 1;
+      width: 100%;
+      border: none;
+      transition: width .5s ease;
     }
-    /* when info open, shrink map */
-    #container.info-open #mapFrame { width:70%; }
+    /* When info is open, shrink map to 70% */
+    #container.info-open #mapFrame { width: 70%; }
   </style>
 </head>
 <body>
@@ -41,24 +63,25 @@
     <!-- Info panel -->
     <div id="infoPanel">
       <div class="content">
-        <h2 id="townName"></h2>
-        <p><strong>Community Type:</strong> <span id="commType"></span></p>
-        <p><strong>Other Field:</strong> <span id="otherField"></span></p>
-        <!-- add more fields here -->
+        <h2 id="townName">Town Name</h2>
+        <p><strong>Municipality:</strong> <span id="municipalityField"></span></p>
+        <p><strong>Community Type:</strong> <span id="communityTypeField"></span></p>
+        <!-- Add more fields as needed -->
       </div>
     </div>
 
-    <!-- Main (search + map) -->
+    <!-- Main content: search + map -->
     <div id="main">
       <div class="search-panel">
-        <input id="townSearch" placeholder="Enter Town Name" />
+        <input  type="text" id="townSearch" placeholder="Enter Town Name" />
         <button id="doSearch">Search</button>
         <button id="doClear">Clear</button>
       </div>
+
       <iframe
         id="mapFrame"
-        src="map_with_button.html?v=4"
-        title="Map"
+        src="map_with_button.html?cachebust=1"
+        title="Map View"
       ></iframe>
     </div>
   </div>
@@ -66,35 +89,33 @@
   <script>
     const container = document.getElementById('container');
     const infoPanel = document.getElementById('infoPanel');
-    const mapFrame = document.getElementById('mapFrame');
+    const mapFrame  = document.getElementById('mapFrame');
 
-    // buttons
     document.getElementById('doSearch').addEventListener('click', () => {
       const name = document.getElementById('townSearch').value.trim();
       if (!name) return;
-      mapFrame.contentWindow.postMessage({ type:'search-town', name }, '*');
-      console.log('🔎 sent search-town', name);
+      mapFrame.contentWindow.postMessage({ type: 'search-town', name }, '*');
     });
 
     document.getElementById('doClear').addEventListener('click', () => {
-      mapFrame.contentWindow.postMessage({ type:'clear-town' }, '*');
-      console.log('🧹 sent clear-town');
-      // hide info
+      mapFrame.contentWindow.postMessage({ type: 'clear-town' }, '*');
+      // also hide the info panel
       container.classList.remove('info-open');
     });
 
-    // listen for selection details from the map iframe
+    // Listen for selection messages from the map iframe
     window.addEventListener('message', e => {
       const msg = e.data;
       if (msg?.type === 'town-selected') {
-        // populate fields
-        document.getElementById('townName').textContent    = msg.properties.Municipality;
-        document.getElementById('commType').textContent    = msg.properties.CommunityType  || 'N/A';
-        document.getElementById('otherField').textContent  = msg.properties.OtherField     || 'N/A';
-        // open info panel
+        const props = msg.properties;
+        document.getElementById('townName').textContent           = props.Municipality    || 'N/A';
+        document.getElementById('municipalityField').textContent = props.Municipality    || 'N/A';
+        document.getElementById('communityTypeField').textContent= props.CommunityType   || 'N/A';
+        // open the panel
         container.classList.add('info-open');
       }
     });
   </script>
+
 </body>
 </html>
