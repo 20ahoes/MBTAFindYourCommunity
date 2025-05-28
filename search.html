@@ -1,7 +1,7 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <meta charset="utf-8">
+  <meta charset="UTF-8" />
   <title>Search Town and View Map</title>
   <style>
     body, html {
@@ -39,6 +39,9 @@
       border-radius: 4px;
       cursor: pointer;
     }
+    .search-panel button:hover {
+      background-color: #003f63;
+    }
     iframe {
       flex-grow: 1;
       width: 100%;
@@ -50,25 +53,30 @@
 
   <div class="search-panel">
     <input type="text" id="townSearch" placeholder="Enter Town Name" />
-    <button onclick="sendSearch()">Search</button>
-    <button onclick="sendClear()">Clear</button>
+    <button id="doSearch">Search</button>
+    <button id="doClear">Clear</button>
   </div>
 
-  <iframe id="mapFrame" src="map_with_button.html" title="Map View"></iframe>
+  <iframe
+    id="mapFrame"
+    src="https://20ahoes.github.io/MBTAFindYourCommunity/map_with_button.html?force=1"
+    title="Map View"
+  ></iframe>
 
   <script>
-    function sendSearch() {
-      const name = document.getElementById('townSearch').value.trim();
-      const mapFrame = document.getElementById('mapFrame');
-      mapFrame.contentWindow.postMessage({ type: 'search-town', name }, '*');
-      console.log("🔎 Sent search-town:", name);
-    }
+    const iframe = document.getElementById('mapFrame');
 
-    function sendClear() {
-      const mapFrame = document.getElementById('mapFrame');
-      mapFrame.contentWindow.postMessage({ type: 'clear-town' }, '*');
+    document.getElementById('doSearch').addEventListener('click', () => {
+      const name = document.getElementById('townSearch').value.trim();
+      if (!name) return;
+      iframe.contentWindow.postMessage({ type: 'search-town', name }, '*');
+      console.log("🔎 Sent search-town:", name);
+    });
+
+    document.getElementById('doClear').addEventListener('click', () => {
+      iframe.contentWindow.postMessage({ type: 'clear-town' }, '*');
       console.log("🧹 Sent clear-town");
-    }
+    });
   </script>
 
 </body>
