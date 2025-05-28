@@ -36,7 +36,7 @@
     }
     .big-info .title { color: darkgreen; font-weight: 700; margin-right: 6px; }
 
-    /* Legend */
+    /* Legend shared styles */
     .legend {
       margin-top: 30px;
       font-family: 'Roboto', sans-serif;
@@ -49,8 +49,18 @@
       margin: 0 0 8px; font-size: 1em;
       text-align: center; color: #003f63; font-weight: 700;
     }
-    .legend-group { margin-top: 6px; }
-    .legend-group.exempt { margin-top: 18px; }
+    .legend-group {
+      margin-top: 12px;
+    }
+    .legend-group.exempt {
+      margin-top: 18px;
+    }
+    .legend-title {
+      display: block;
+      color: #003f63;
+      font-weight: 700;
+      margin-bottom: 6px;
+    }
     .legend-item {
       display: flex; align-items: center; margin: 6px 0;
     }
@@ -61,14 +71,14 @@
       margin-right: 8px; flex-shrink: 0;
     }
 
-    /* Map legend */
+    /* Map‑side legend */
     #legendMap {
       position: absolute; bottom: 20px; left: 20px;
       z-index: 4; width: auto;
-      font-family: 'Roboto', sans-serif;
     }
     #container.info-open #legendMap { display: none; }
-    /* Panel legend */
+
+    /* Panel‑side legend */
     #legendPanel { display: none; }
     #container.info-open #legendPanel { display: block; }
 
@@ -114,15 +124,21 @@
 <body>
 
   <div id="container">
-    <!-- Map legend -->
+
+    <!-- Map‑side legend -->
     <div id="legendMap" class="legend">
       <h3>MBTA Communities</h3>
-      <div class="legend-item"><span class="patch" style="background:#2A6D93"></span>Rapid Transit</div>
-      <div class="legend-item"><span class="patch" style="background:#508EB1"></span>Commuter Rail</div>
-      <div class="legend-item"><span class="patch" style="background:#B4B474"></span>Adjacent community</div>
-      <div class="legend-item"><span class="patch" style="background:#E3E3B6"></span>Adjacent small town</div>
+
+      <div class="legend-group">
+        <span class="legend-title">Community Types</span>
+        <div class="legend-item"><span class="patch" style="background:#2A6D93"></span>Rapid Transit</div>
+        <div class="legend-item"><span class="patch" style="background:#508EB1"></span>Commuter Rail</div>
+        <div class="legend-item"><span class="patch" style="background:#B4B474"></span>Adjacent community</div>
+        <div class="legend-item"><span class="patch" style="background:#E3E3B6"></span>Adjacent small town</div>
+      </div>
+
       <div class="legend-group exempt">
-        <span class="legend-title" style="color:#003f63; font-weight:700">Exempt Communities</span>
+        <span class="legend-title">Exempt Communities</span>
         <div class="legend-item"><span class="patch" style="background:#9C9C9C"></span></div>
       </div>
     </div>
@@ -130,27 +146,34 @@
     <!-- Info panel -->
     <div id="infoPanel">
       <div class="content">
-        <h2 id="townName">Town Name</h2>
+        <h2 id="townName">Town Name</h2>
         <div class="small-info">
-          <p><span class="title">Area in Sq. Miles:</span><span id="areaField"></span></p>
+          <p><span class="title">Area in Sq. Miles:</span><span id="areaField"></span></p>
           <p><span class="title">Population (2020):</span><span id="popField"></span></p>
         </div>
         <div class="big-info">
           <p><span class="title">Community Type:</span><span id="commField"></span></p>
           <p><span class="title">Unit Capacity Requirement:</span><span id="unitField"></span></p>
         </div>
-        <!-- Panel legend -->
+
+        <!-- Panel‑side legend -->
         <div id="legendPanel" class="legend">
           <h3>MBTA Communities</h3>
-          <div class="legend-item"><span class="patch" style="background:#2A6D93"></span>Rapid Transit</div>
-          <div class="legend-item"><span class="patch" style="background:#508EB1"></span>Commuter Rail</div>
-          <div class="legend-item"><span class="patch" style="background:#B4B474"></span>Adjacent community</div>
-          <div class="legend-item"><span class="patch" style="background:#E3E3B6"></span>Adjacent small town</div>
+
+          <div class="legend-group">
+            <span class="legend-title">Community Types</span>
+            <div class="legend-item"><span class="patch" style="background:#2A6D93"></span>Rapid Transit</div>
+            <div class="legend-item"><span class="patch" style="background:#508EB1"></span>Commuter Rail</div>
+            <div class="legend-item"><span class="patch" style="background:#B4B474"></span>Adjacent community</div>
+            <div class="legend-item"><span class="patch" style="background:#E3E3B6"></span>Adjacent small town</div>
+          </div>
+
           <div class="legend-group exempt">
-            <span class="legend-title" style="color:#003f63; font-weight:700">Exempt Communities</span>
+            <span class="legend-title">Exempt Communities</span>
             <div class="legend-item"><span class="patch" style="background:#9C9C9C"></span></div>
           </div>
         </div>
+
       </div>
     </div>
 
