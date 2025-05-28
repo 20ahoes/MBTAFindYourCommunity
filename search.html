@@ -8,56 +8,49 @@
       height: 100vh; margin: 0; padding: 0;
       font-family: 'Roboto', sans-serif;
     }
+    /* Container holds panel + main */
     #container {
       position: relative;
       width: 100%; height: 100%;
     }
-    /* panel offscreen left */
+    /* Info panel offscreen left by default */
     #infoPanel {
-      position: absolute; top: 0; left: -30%;
-      width: 30%; height: 100%;
+      position: absolute;
+      top: 0; left: -300px;
+      width: 300px; height: 100%;
       background: #fff;
       box-shadow: 2px 0 6px rgba(0,0,0,0.1);
       overflow-y: auto;
       transition: left 0.5s ease;
       z-index: 5;
-      display: flex;
     }
-    /* slide in */
+    /* Slide it in */
     #container.info-open #infoPanel {
       left: 0;
     }
-    /* center content */
     #infoPanel .content {
-      margin: auto;
-      width: 80%;
-      text-align: center;
+      padding: 20px;
     }
-    /* Town name */
     #townName {
-      margin: 0 0 8px;
-      font-size: 1.6em;
-      line-height: 1.2;
+      font-size: 1.4em;
+      margin: 0 0 10px;
     }
-    /* small info */
     .small-info p {
       margin: 4px 0;
-      font-size: 0.9em;
-      line-height: 1.2;
+      font-size: 1em;
     }
     .small-info .title {
       color: navy;
       font-weight: bold;
       margin-right: 4px;
     }
-    /* big info */
     .big-info {
       margin-top: 20px;
     }
     .big-info p {
       margin: 8px 0;
-      font-size: 1.1em;
-      line-height: 1.2;
+      font-size: 1em;
+      /* prevent overflow */
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
@@ -67,19 +60,24 @@
       font-weight: bold;
       margin-right: 4px;
     }
-    /* Main */
+    /* Main area */
     #main {
-      position: absolute; top: 0; left: 0;
+      position: absolute;
+      top: 0; left: 0;
       width: 100%; height: 100%;
       transition: left 0.5s ease, width 0.5s ease;
     }
+    /* Push main over 300px when panel open */
     #container.info-open #main {
-      left: 30%; width: 70%;
+      left: 300px;
+      width: calc(100% - 300px);
     }
     /* Search bar */
     .search-panel {
-      position: absolute; top: 0; left: 0; right: 0;
-      height: 60px; background: #f4f4f4;
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 60px;
+      background: #f4f4f4;
       display: flex; align-items: center;
       padding: 0 20px; gap: 10px;
       box-shadow: 0 2px 4px rgba(0,0,0,0.1);
@@ -91,7 +89,7 @@
     }
     .search-panel button {
       padding: 8px 16px; font-size: 16px; font-weight: bold;
-      background: #005e95; color: white; border: none; border-radius: 4px;
+      background: #005e95; color: #fff; border: none; border-radius: 4px;
       cursor: pointer;
     }
     .search-panel button:hover {
@@ -99,14 +97,17 @@
     }
     /* Map iframe */
     #mapFrame {
-      position: absolute; top: 60px; left: 0; right: 0; bottom: 0;
-      border: none; width: 100%; height: calc(100% - 60px);
+      position: absolute;
+      top: 60px; left: 0; right: 0; bottom: 0;
+      border: none;
+      width: 100%; height: calc(100% - 60px);
     }
   </style>
 </head>
 <body>
 
   <div id="container">
+    <!-- Info panel -->
     <div id="infoPanel">
       <div class="content">
         <h2 id="townName">Town Name</h2>
@@ -121,6 +122,7 @@
       </div>
     </div>
 
+    <!-- Main (search + map) -->
     <div id="main">
       <div class="search-panel">
         <input type="text" id="townSearch" placeholder="Enter Town Name"/>
@@ -129,36 +131,36 @@
       </div>
       <iframe
         id="mapFrame"
-        src="map_with_button.html?cachebust=4"
+        src="map_with_button.html?cachebust=5"
         title="Map View"
       ></iframe>
     </div>
   </div>
 
   <script>
-    const container = document.getElementById('container');
-    const mapFrame  = document.getElementById('mapFrame');
+    const container = document.getElementById('container'),
+          mapFrame  = document.getElementById('mapFrame');
 
-    document.getElementById('doSearch').addEventListener('click', ()=>{
+    document.getElementById('doSearch').addEventListener('click', () => {
       const name = document.getElementById('townSearch').value.trim();
       if (!name) return;
       mapFrame.contentWindow.postMessage({ type:'search-town', name }, '*');
     });
 
-    document.getElementById('doClear').addEventListener('click', ()=>{
+    document.getElementById('doClear').addEventListener('click', () => {
       mapFrame.contentWindow.postMessage({ type:'clear-town' }, '*');
       container.classList.remove('info-open');
     });
 
-    window.addEventListener('message', e=>{
+    window.addEventListener('message', e => {
       const msg = e.data;
       if (msg?.type === 'town-selected') {
         const p = msg.properties;
-        document.getElementById('townName').textContent           = p.Municipality  || 'N/A';
-        document.getElementById('areaField').textContent          = p.MBTAStationMunicipaliti_Clip1_A         || 'N/A';
-        document.getElementById('popField').textContent           = p.MBTAStationMunicipaliti_Clip1_P         || 'N/A';
-        document.getElementById('commField').textContent          = p.data0k5Yh_TableToExcel_ExcelT_2         || 'N/A';
-        document.getElementById('unitField').textContent          = p["data0k5Yh_TableToExcel_ExcelT_3 "]     || 'N/A';
+        document.getElementById('townName').textContent          = p.Municipality    || 'N/A';
+        document.getElementById('areaField').textContent         = p.MBTAStationMunicipaliti_Clip1_A     || 'N/A';
+        document.getElementById('popField').textContent          = p.MBTAStationMunicipaliti_Clip1_P     || 'N/A';
+        document.getElementById('commField').textContent         = p.data0k5Yh_TableToExcel_ExcelT_2     || 'N/A';
+        document.getElementById('unitField').textContent         = p["data0k5Yh_TableToExcel_ExcelT_3 "] || 'N/A';
         container.classList.add('info-open');
       }
       else if (msg?.type === 'clear-town') {
@@ -166,6 +168,5 @@
       }
     });
   </script>
-
 </body>
 </html>
