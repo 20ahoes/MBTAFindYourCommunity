@@ -34,7 +34,7 @@
       z-index: 1;
       pointer-events: none;
     }
-    #toggleMapboxLayer, #clearHighlightButton {
+    #toggleMapboxLayer {
       pointer-events: auto;
       padding: 10px 20px;
       font-size: 16px;
@@ -74,7 +74,6 @@
 
   <div class="top-bar">
     <button id="toggleMapboxLayer">Toggle Municipalities Layer</button>
-    <button id="clearHighlightButton">Clear</button>
   </div>
 
   <div id="map"></div>
@@ -139,11 +138,6 @@
         map.flyTo({ center: defaultCenter, zoom: defaultZoom, speed: 1.2, essential: true });
       });
 
-      document.getElementById('clearHighlightButton').addEventListener('click', () => {
-        map.setPaintProperty(layerId, 'fill-color', '#ccc');
-        currentTown = null;
-      });
-
       window.addEventListener("message", function(event) {
         if (event.data?.type === 'search-town') {
           const searchName = event.data.name.trim().toLowerCase();
@@ -151,7 +145,6 @@
 
           const match = features.find(f => f.properties?.[nameField]?.toLowerCase() === searchName);
           if (match) highlightAndZoom(match);
-          else alert("❌ Town not found.");
         }
       });
 
