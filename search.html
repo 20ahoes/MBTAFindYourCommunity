@@ -1,3 +1,4 @@
+<!-- search.html -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -84,6 +85,23 @@
     }
     .big-info .title {
       color: darkgreen; font-weight: 700; margin-right: 6px;
+    }
+
+    /* -------- Panel Close “×” -------- */
+    #closePanel {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      background: none;
+      border: none;
+      outline: none;
+      font-size: 24px;
+      font-weight: bold;
+      color: #333;
+      cursor: pointer;
+    }
+    #closePanel:hover {
+      color: #000;
     }
 
     /* -------- Legend Styles -------- */
@@ -259,7 +277,7 @@
       </div>
       <iframe
         id="mapFrame"
-        src="map_with_button.html?cachebust=8"
+        src="map_with_button.html?ver=1.0"
         title="Map View">
       </iframe>
     </div>
@@ -275,10 +293,10 @@
           btnClear  = document.getElementById('clearInput'),
           btnClose  = document.getElementById('closePanel');
 
-    // hide intro overlay
+    // hide intro
     startBtn.addEventListener('click', () => intro.style.display = 'none');
 
-    // collapse info & notify map to clear
+    // collapse panel + notify child
     function clearAll() {
       input.value = '';
       toggleClearIcon();
@@ -286,7 +304,7 @@
       mapFrame.contentWindow.postMessage({ type:'clear-request' }, '*');
     }
 
-    // search by town name
+    // search
     function runSearch() {
       const name = input.value.trim();
       if (!name) return;
@@ -303,11 +321,11 @@
       btnClear.style.display = input.value ? 'block' : 'none';
     }
     btnClear.addEventListener('click', clearAll);
-    toggleClearIcon();
+    toggleClearIcon(); 
 
     btnClose.addEventListener('click', clearAll);
 
-    // handle replies from the map iframe
+    // handle map replies
     window.addEventListener('message', e => {
       if (e.source !== mapFrame.contentWindow) return;
       const msg = e.data;
@@ -321,7 +339,7 @@
         container.classList.add('info-open');
       }
       else if (msg?.type === 'clear-complete') {
-        // map has reset; ready for next search
+        // ready for next search
       }
     });
   </script>
