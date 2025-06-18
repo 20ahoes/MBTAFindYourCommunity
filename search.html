@@ -1,17 +1,254 @@
-<!-- search.html -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8"/>
   <title>MBTA Municipalities Explorer</title>
-  <!-- … your existing <link> and <style> … -->
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet"/>
+  <style>
+    html, body {
+      height: 100vh; margin: 0; padding: 0;
+      font-family: 'Roboto', sans-serif;
+    }
+    #container {
+      position: relative;
+      width: 100%; height: 100%;
+    }
+
+    /* -------- Intro Overlay -------- */
+    #introOverlay {
+      position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0,0,0,0.5);
+      display: flex; justify-content: center; align-items: center;
+      z-index: 100;
+    }
+    #introPopup {
+      background: #fff;
+      border-radius: 8px;
+      max-width: 400px;
+      width: 90%;
+      padding: 24px;
+      text-align: center;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+    }
+    #introPopup p {
+      margin: 0 0 20px;
+      font-size: 1em;
+      line-height: 1.4;
+      color: #333;
+    }
+    #startButton {
+      background-color: #003b56;
+      color: #fff;
+      font-weight: 700;
+      padding: 12px 24px;
+      font-size: 1em;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    #startButton:hover {
+      background-color: #00283b;
+    }
+
+    /* -------- Info Panel -------- */
+    #infoPanel {
+      position: absolute; top: 0; left: -320px;
+      width: 320px; height: 100%;
+      background: #fff;
+      box-shadow: 2px 0 8px rgba(0,0,0,0.15);
+      overflow-y: auto;
+      transition: left 0.5s ease;
+      z-index: 5;
+    }
+    #container.info-open #infoPanel {
+      left: 0;
+    }
+    #infoPanel .content {
+      padding: 30px 20px 20px;
+    }
+    #townName {
+      font-size: 1.5em; margin: 0 0 12px;
+    }
+    .small-info p {
+      margin: 6px 0; font-size: 1em; line-height: 1.4;
+    }
+    .small-info .title {
+      color: navy; font-weight: 700; margin-right: 6px;
+    }
+    .big-info {
+      margin-top: 24px;
+    }
+    .big-info p {
+      margin: 10px 0; font-size: 1em; line-height: 1.4;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .big-info .title {
+      color: darkgreen; font-weight: 700; margin-right: 6px;
+    }
+
+    /* -------- Legend Styles -------- */
+    .legend {
+      margin-top: 30px;
+      font-size: 0.9em; line-height: 1.5;
+      background: #fff; border: 1px solid #003f63;
+      border-radius: 6px; padding: 10px 12px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+    }
+    .legend h3 {
+      margin: 0 0 8px; font-size: 1em;
+      text-align: center; color: #003f63; font-weight: 700;
+    }
+    .legend-group {
+      margin-top: 12px;
+    }
+    .legend-group.exempt {
+      margin-top: 18px;
+    }
+    .legend-title {
+      display: block; color: #003f63;
+      font-weight: 700; margin-bottom: 6px;
+    }
+    .legend-item {
+      display: flex; align-items: center; margin: 6px 0;
+    }
+    .legend-item .patch {
+      width: 18px; height: 18px;
+      border: 1px solid #fff;
+      box-shadow: inset 0 0 0 1px #fff;
+      margin-right: 8px; flex-shrink: 0;
+    }
+
+    /* -------- Map-side legend -------- */
+    #legendMap {
+      position: absolute; bottom: 20px; left: 20px;
+      z-index: 4; width: auto;
+    }
+    #container.info-open #legendMap {
+      display: none;
+    }
+
+    /* -------- Panel-side legend -------- */
+    #legendPanel {
+      display: none;
+    }
+    #container.info-open #legendPanel {
+      display: block;
+    }
+
+    /* -------- Main (search + map) -------- */
+    #main {
+      position: absolute; top: 0; left: 0;
+      width: 100%; height: 100%;
+      transition: left 0.5s ease, width 0.5s ease;
+    }
+    #container.info-open #main {
+      left: 320px; width: calc(100% - 320px);
+    }
+
+    /* -------- Search bar -------- */
+    .search-panel {
+      position: absolute; top: 0; left: 0; right: 0;
+      height: 60px; background: #f4f4f4;
+      display: flex; align-items: center;
+      padding: 0 20px; gap: 10px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      z-index: 10;
+    }
+    .input-wrapper {
+      position: relative; flex: 1;
+    }
+    .input-wrapper input {
+      width: 100%; padding: 8px 30px 8px 8px;
+      font-size: 16px; border: 1px solid #ccc; border-radius: 4px;
+      box-sizing: border-box;
+    }
+    .input-wrapper button#clearInput {
+      position: absolute; right: 8px; top: 50%;
+      transform: translateY(-50%);
+      background: none; border: none;
+      font-size: 16px; color: #888; cursor: pointer;
+      display: none;
+    }
+    .input-wrapper button#clearInput:hover {
+      color: #555;
+    }
+    .search-panel button#doSearch {
+      padding: 8px 16px; font-size: 16px; font-weight: 700;
+      background: #005e95; color: #fff;
+      border: none; border-radius: 4px; cursor: pointer;
+    }
+    .search-panel button#doSearch:hover {
+      background: #003f63;
+    }
+
+    /* -------- Map iframe -------- */
+    #mapFrame {
+      position: absolute;
+      top: 60px; left: 0; right: 0; bottom: 0;
+      border: none; width: 100%; height: calc(100% - 60px);
+    }
+  </style>
 </head>
 <body>
 
-  <!-- Intro Overlay, legend, info panel, etc. all unchanged … -->
+  <!-- Intro Overlay -->
+  <div id="introOverlay">
+    <div id="introPopup">
+      <p>Welcome! Search or click a town to explore the MBTA Communities.</p>
+      <button id="startButton">Start</button>
+    </div>
+  </div>
 
   <div id="container">
-    <!-- … legendMap, infoPanel, main/search layout … -->
+    <!-- Map legend -->
+    <div id="legendMap" class="legend">
+      <h3>MBTA Communities</h3>
+      <div class="legend-group">
+        <span class="legend-title">Community Types</span>
+        <div class="legend-item"><span class="patch" style="background:#2A6D93"></span>Rapid Transit</div>
+        <div class="legend-item"><span class="patch" style="background:#508EB1"></span>Commuter Rail</div>
+        <div class="legend-item"><span class="patch" style="background:#B4B474"></span>Adjacent community</div>
+        <div class="legend-item"><span class="patch" style="background:#E3E3B6"></span>Adjacent small town</div>
+      </div>
+      <div class="legend-group exempt">
+        <span class="legend-title">Exempt Communities</span>
+        <div class="legend-item"><span class="patch" style="background:#9C9C9C"></span></div>
+      </div>
+    </div>
+
+    <!-- Info panel -->
+    <div id="infoPanel">
+      <button id="closePanel" aria-label="Close">×</button>
+      <div class="content">
+        <h2 id="townName">Town Name</h2>
+        <div class="small-info">
+          <p><span class="title">Area in Sq. Miles:</span><span id="areaField"></span></p>
+          <p><span class="title">Population (2020):</span><span id="popField"></span></p>
+        </div>
+        <div class="big-info">
+          <p><span class="title">Community Type:</span><span id="commField"></span></p>
+          <p><span class="title">Unit Capacity Requirement:</span><span id="unitField"></span></p>
+        </div>
+
+        <!-- Panel legend -->
+        <div id="legendPanel" class="legend">
+          <h3>MBTA Communities</h3>
+          <div class="legend-group">
+            <span class="legend-title">Community Types</span>
+            <div class="legend-item"><span class="patch" style="background:#2A6D93"></span>Rapid Transit</div>
+            <div class="legend-item"><span class="patch" style="background:#508EB1"></span>Commuter Rail</div>
+            <div class="legend-item"><span class="patch" style="background:#B4B474"></span>Adjacent community</div>
+            <div class="legend-item"><span class="patch" style="background:#E3E3B6"></span>Adjacent small town</div>
+          </div>
+          <div class="legend-group exempt">
+            <span class="legend-title">Exempt Communities</span>
+            <div class="legend-item"><span class="patch" style="background:#9C9C9C"></span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Main (search + map) -->
     <div id="main">
       <div class="search-panel">
         <div class="input-wrapper">
@@ -23,8 +260,8 @@
       <iframe
         id="mapFrame"
         src="map_with_button.html?cachebust=8"
-        title="Map View"
-      ></iframe>
+        title="Map View">
+      </iframe>
     </div>
   </div>
 
@@ -38,24 +275,22 @@
           btnClear  = document.getElementById('clearInput'),
           btnClose  = document.getElementById('closePanel');
 
-    // hide intro
-    startBtn.addEventListener('click', () => {
-      intro.style.display = 'none';
-    });
+    // hide intro overlay
+    startBtn.addEventListener('click', () => intro.style.display = 'none');
 
-    // clear everything: collapse panel, clear input, notify child
+    // collapse info & notify map to clear
     function clearAll() {
       input.value = '';
       toggleClearIcon();
       container.classList.remove('info-open');
-      mapFrame.contentWindow.postMessage({ type: 'clear-request' }, '*');
+      mapFrame.contentWindow.postMessage({ type:'clear-request' }, '*');
     }
 
-    // send search command
+    // search by town name
     function runSearch() {
       const name = input.value.trim();
       if (!name) return;
-      mapFrame.contentWindow.postMessage({ type: 'search-town', name }, '*');
+      mapFrame.contentWindow.postMessage({ type:'search-town', name }, '*');
     }
 
     btnSearch.addEventListener('click', runSearch);
@@ -72,7 +307,7 @@
 
     btnClose.addEventListener('click', clearAll);
 
-    // only handle messages from our iframe
+    // handle replies from the map iframe
     window.addEventListener('message', e => {
       if (e.source !== mapFrame.contentWindow) return;
       const msg = e.data;
@@ -86,7 +321,7 @@
         container.classList.add('info-open');
       }
       else if (msg?.type === 'clear-complete') {
-        // child has reset view; nothing more to do
+        // map has reset; ready for next search
       }
     });
   </script>
