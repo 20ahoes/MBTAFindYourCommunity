@@ -43,16 +43,16 @@
   <script>
     mapboxgl.accessToken = 'pk.eyJ1IjoiMjBhaG9lcyIsImEiOiJjbWFwazQxbDgwaXMzMmxwbzJmNmhidm0yIn0.NileAvzC_m2asZI3tLIqUw';
 
-    const defaultCenter = [-71.245, 42.254],
-          defaultZoom   = 7.6,
-          vectorLayerId = 'municipalitiesbycommunitytype-c8ks3h copy',
-          tileField     = 'Municipali',
-          geojsonField  = 'Municipality',
-          geojsonURL    = './MunicipalitiesByCommunityType.geojson';
+    const defaultCenter    = [-71.245, 42.254],
+          defaultZoom      = 7.6,
+          vectorLayerId    = 'municipalitiesbycommunitytype-c8ks3h copy',
+          tileField        = 'Municipali',
+          geojsonField     = 'Municipality',
+          geojsonURL       = './MunicipalitiesByCommunityType.geojson';
 
     let municipalitiesData = [], initialCamera;
 
-    // initialize map
+    // initialize map (scroll‐zoom ON)
     const map = new mapboxgl.Map({
       container: 'map',
       style: 'mapbox://styles/20ahoes/cmb6rnzqp00rs01sddsqq9xtx',
@@ -62,35 +62,11 @@
       maxZoom: 22
     });
 
-    // disable default scroll-zoom
-    map.scrollZoom.disable();
-
-    // custom wheel handler: faster zoom
-    map.getCanvas().addEventListener('wheel', e => {
-      e.preventDefault();
-      const zoomSpeed = 0.02;                    // ~2 zoom levels per wheel notch
-      const zoomDelta = -e.deltaY * zoomSpeed;   // negative deltaY => zoom in
-
-      if (zoomDelta < 0) {
-        // always allow zoom-out
-        map.easeTo({ zoom: map.getZoom() + zoomDelta, duration: 200 });
-      } else {
-        // zoom-in only if hovering over a municipality
-        const features = map.queryRenderedFeatures(
-          [e.offsetX, e.offsetY],
-          { layers: [vectorLayerId] }
-        );
-        if (features.length) {
-          map.easeTo({ zoom: map.getZoom() + zoomDelta, duration: 200 });
-        }
-      }
-    }, { passive: false });
-
     // resize on container changes
     window.addEventListener('resize', () => map.resize());
 
     map.on('load', () => {
-      // capture the exact initial camera
+      // capture exact initial camera
       initialCamera = {
         center:  map.getCenter().toArray(),
         zoom:    map.getZoom(),
@@ -104,7 +80,7 @@
         .then(data => municipalitiesData = data.features)
         .catch(err => console.error('GeoJSON load failed:', err));
 
-      // faded layer
+      // faded base layer
       map.addSource('municipalities-full', { type:'geojson', data:geojsonURL });
       map.addLayer({
         id: 'fade-layer',
@@ -135,7 +111,7 @@
       // home button
       document.getElementById('homeButton').onclick = clearSelection;
 
-      // click-to-select
+      // click‐to‐select
       map.on('click', vectorLayerId, e => {
         if (!municipalitiesData.length) return;
         const clicked = e.features[0].properties[tileField].toLowerCase();
@@ -146,8 +122,9 @@
       });
     });
 
+    // zoom into a feature (1 s)
     function selectFeature(feature) {
-      const coords = (feature.geometry.type === 'MultiPolygon')
+      const coords = feature.geometry.type === 'MultiPolygon'
         ? feature.geometry.coordinates.flat(2)
         : feature.geometry.coordinates[0];
       const bb = coords.reduce(
@@ -155,9 +132,8 @@
         new mapboxgl.LngLatBounds()
       );
       map.fitBounds(bb, { padding:40, duration:1000 });
-      map.setFilter(
-        'fade-layer',
-        ['!=',['get', geojsonField], feature.properties[geojsonField]]
+      map.setFilter('fade-layer',
+        ['!=',['get',geojsonField], feature.properties[geojsonField]]
       );
       map.setLayoutProperty('fade-layer','visibility','visible');
       map.getSource('highlight-town').setData({
@@ -169,6 +145,7 @@
       }, '*');
     }
 
+    // reset to initial view (1 s)
     function clearSelection() {
       map.setLayoutProperty('fade-layer','visibility','none');
       map.getSource('highlight-town').setData({
@@ -185,6 +162,7 @@
       window.parent.postMessage({ type:'clear-complete' }, '*');
     }
 
+    // handle search/clear from parent
     window.addEventListener('message', e => {
       const msg = e.data;
       if (!municipalitiesData.length) return;
