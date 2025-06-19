@@ -126,7 +126,7 @@
         new mapboxgl.LngLatBounds()
       );
 
-      map.fitBounds(bb, { padding:40, duration:500 });
+      map.fitBounds(bb, { padding:40, duration:1000 });
       map.setFilter('fade-layer',
         ['!=',['get',geojsonField],feature.properties[geojsonField]]
       );
@@ -157,7 +157,7 @@
         zoom:    initialCamera.zoom,
         bearing: initialCamera.bearing,
         pitch:   initialCamera.pitch,
-        duration: 500
+        duration: 1000
       });
 
       window.parent.postMessage({ type:'clear-complete' }, '*');
