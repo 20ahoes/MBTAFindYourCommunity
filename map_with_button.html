@@ -42,16 +42,15 @@
   <script>
     mapboxgl.accessToken = 'pk.eyJ1IjoiMjBhaG9lcyIsImEiOiJjbWFwazQxbDgwaXMzMmxwbzJmNmhidm0yIn0.NileAvzC_m2asZI3tLIqUw';
 
-    const defaultCenter = [-71.245, 42.254],
-          defaultZoom   = 8,
-          vectorLayerId = 'municipalitiesbycommunitytype-c8ks3h copy',
-          tileField     = 'Municipali',
-          geojsonField  = 'Municipality',
-          bounds        = [[-72.5,41.5],[-69.5,43.0]],
-          geojsonURL    = './MunicipalitiesByCommunityType.geojson';
+    const defaultCenter    = [-71.245, 42.254],
+          defaultZoom      = 8,
+          vectorLayerId    = 'municipalitiesbycommunitytype-c8ks3h copy',
+          tileField        = 'Municipali',
+          geojsonField     = 'Municipality',
+          bounds           = [[-72.5,41.5],[-69.5,43.0]],
+          geojsonURL       = './MunicipalitiesByCommunityType.geojson';
 
-    let municipalitiesData = [],
-        initialCamera;   // will hold the exact initial view
+    let municipalitiesData = [], initialCamera;
 
     // initialize map
     const map = new mapboxgl.Map({
@@ -64,26 +63,23 @@
       maxBounds: bounds
     });
 
-    // record the exact initial camera once the style is fully loaded
+    // once loaded, save exact initial camera and set up layers
     map.on('load', () => {
       initialCamera = {
-        center: map.getCenter().toArray(),  // [lng, lat]
-        zoom: map.getZoom(),
+        center:  map.getCenter().toArray(),
+        zoom:    map.getZoom(),
         bearing: map.getBearing(),
-        pitch: map.getPitch()
+        pitch:   map.getPitch()
       };
 
-      // load GeoJSON features
+      // load GeoJSON
       fetch(geojsonURL)
         .then(r => r.ok ? r.json() : Promise.reject(r.status))
         .then(data => municipalitiesData = data.features)
         .catch(err => console.error('GeoJSON load failed:', err));
 
       // faded base layer
-      map.addSource('municipalities-full', {
-        type: 'geojson',
-        data: geojsonURL
-      });
+      map.addSource('municipalities-full', { type: 'geojson', data: geojsonURL });
       map.addLayer({
         id: 'fade-layer',
         type: 'fill',
@@ -110,10 +106,9 @@
         paint: { 'line-color': '#FF9800', 'line-width': 2 }
       });
 
-      // wire up the home button
       document.getElementById('homeButton').onclick = clearSelection;
 
-      // click-to-select logic
+      // click-to-select
       map.on('click', vectorLayerId, e => {
         if (!municipalitiesData.length) return;
         const name = e.features[0].properties[tileField];
@@ -124,17 +119,17 @@
       });
     });
 
-    // zoom in to a selected town
+    // zoom in
     function selectFeature(feature) {
-      const bb = feature.geometry.type === 'MultiPolygon'
+      const coords = feature.geometry.type === 'MultiPolygon'
         ? feature.geometry.coordinates.flat(2)
         : feature.geometry.coordinates[0];
-      const bounds = bb.reduce(
+      const bb = coords.reduce(
         (b, c) => b.extend(c),
         new mapboxgl.LngLatBounds()
       );
 
-      map.fitBounds(bounds, { padding: 40, duration: 1000 });
+      map.fitBounds(bb, { padding: 40, duration: 1000 });
       map.setFilter('fade-layer',
         ['!=', ['get', geojsonField], feature.properties[geojsonField]]
       );
@@ -150,27 +145,29 @@
       }, '*');
     }
 
-    // return to **exact** initial view
+    // clear & return to exactly initial camera
     function clearSelection() {
-      if (!initialCamera) return;
       map.setLayoutProperty('fade-layer', 'visibility', 'none');
       map.getSource('highlight-town').setData({
         type: 'FeatureCollection',
         features: []
       });
 
+      // recalc dimensions now that panel is gone…
+      map.resize();
+
       map.easeTo({
-        center: initialCamera.center,
-        zoom: initialCamera.zoom,
+        center:  initialCamera.center,
+        zoom:    initialCamera.zoom,
         bearing: initialCamera.bearing,
-        pitch: initialCamera.pitch,
+        pitch:   initialCamera.pitch,
         duration: 1000
       });
 
       window.parent.postMessage({ type: 'clear-complete' }, '*');
     }
 
-    // respond to search or clear from parent
+    // respond to search or clear requests
     window.addEventListener('message', e => {
       const msg = e.data;
       if (!municipalitiesData.length) return;
