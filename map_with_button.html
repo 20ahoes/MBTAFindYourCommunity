@@ -62,25 +62,26 @@
       maxZoom: 22
     });
 
-    // disable default scroll-zoom behavior
+    // disable default wheel zoom
     map.scrollZoom.disable();
 
-    // custom wheel handler: zoom-out always, zoom-in only over a polygon
+    // custom wheel handler for faster zoom
     map.getCanvas().addEventListener('wheel', e => {
       e.preventDefault();
-      const delta = e.deltaY;
-      const zoomDelta = delta < 0 ? 0.2 : -0.2; // wheel-up => positive zoom change
+      const zoomSpeed = 0.005;                     // ~0.5 zoom per wheel notch
+      const zoomDelta = -e.deltaY * zoomSpeed;     // e.deltaY < 0 => zoom in
+
       if (zoomDelta < 0) {
-        // always allow zoom-out
-        map.easeTo({ zoom: map.getZoom() + zoomDelta, duration: 1000 });
+        // always allow zoom‐out
+        map.easeTo({ zoom: map.getZoom() + zoomDelta, duration: 500 });
       } else {
-        // only zoom-in if hovering over a municipality polygon
+        // zoom‐in only over a municipality
         const features = map.queryRenderedFeatures(
           [e.offsetX, e.offsetY],
           { layers: [vectorLayerId] }
         );
         if (features.length) {
-          map.easeTo({ zoom: map.getZoom() + zoomDelta, duration: 1000 });
+          map.easeTo({ zoom: map.getZoom() + zoomDelta, duration: 500 });
         }
       }
     }, { passive: false });
@@ -89,7 +90,7 @@
     window.addEventListener('resize', () => map.resize());
 
     map.on('load', () => {
-      // capture the exact initial camera
+      // capture initial camera
       initialCamera = {
         center:  map.getCenter().toArray(),
         zoom:    map.getZoom(),
@@ -97,13 +98,13 @@
         pitch:   map.getPitch()
       };
 
-      // load your GeoJSON features
+      // load GeoJSON
       fetch(geojsonURL)
         .then(r => r.ok ? r.json() : Promise.reject(r.status))
         .then(data => municipalitiesData = data.features)
         .catch(err => console.error('GeoJSON load failed:', err));
 
-      // faded base layer
+      // faded layer
       map.addSource('municipalities-full', { type:'geojson', data:geojsonURL });
       map.addLayer({
         id: 'fade-layer',
@@ -115,8 +116,8 @@
 
       // highlight layer
       map.addSource('highlight-town', {
-        type: 'geojson',
-        data: { type:'FeatureCollection', features:[] }
+        type:'geojson',
+        data:{ type:'FeatureCollection', features:[] }
       });
       map.addLayer({
         id: 'highlight-fill',
@@ -131,7 +132,7 @@
         paint: { 'line-color':'#FF9800','line-width':2 }
       });
 
-      // wire up Home button
+      // home button
       document.getElementById('homeButton').onclick = clearSelection;
 
       // click‐to‐select
@@ -145,54 +146,47 @@
       });
     });
 
-    // zoom in to a feature (1000 ms)
+    // zoom into a feature
     function selectFeature(feature) {
-      const coords = feature.geometry.type === 'MultiPolygon'
+      const coords = feature.geometry.type==='MultiPolygon'
         ? feature.geometry.coordinates.flat(2)
         : feature.geometry.coordinates[0];
       const bb = coords.reduce(
-        (b, c) => b.extend(c),
+        (b,c) => b.extend(c),
         new mapboxgl.LngLatBounds()
       );
-
       map.fitBounds(bb, { padding:40, duration:1000 });
-      map.setFilter(
-        'fade-layer',
+      map.setFilter('fade-layer',
         ['!=',['get', geojsonField], feature.properties[geojsonField]]
       );
       map.setLayoutProperty('fade-layer','visibility','visible');
       map.getSource('highlight-town').setData({
-        type:'FeatureCollection',
-        features:[feature]
+        type:'FeatureCollection', features:[feature]
       });
-
       window.parent.postMessage({
         type:'town-selected',
         properties: feature.properties
       }, '*');
     }
 
-    // zoom back out to initial camera (1000 ms)
+    // return to initial view
     function clearSelection() {
       map.setLayoutProperty('fade-layer','visibility','none');
       map.getSource('highlight-town').setData({
-        type:'FeatureCollection',
-        features:[]
+        type:'FeatureCollection', features:[]
       });
-
       map.resize();
       map.easeTo({
         center:  initialCamera.center,
         zoom:    initialCamera.zoom,
         bearing: initialCamera.bearing,
         pitch:   initialCamera.pitch,
-        duration: 1000
+        duration:1000
       });
-
       window.parent.postMessage({ type:'clear-complete' }, '*');
     }
 
-    // listen for search/cancel from parent
+    // listen for search/clear from parent
     window.addEventListener('message', e => {
       const msg = e.data;
       if (!municipalitiesData.length) return;
