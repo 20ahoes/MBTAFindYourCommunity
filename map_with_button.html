@@ -43,34 +43,32 @@
     mapboxgl.accessToken = 'pk.eyJ1IjoiMjBhaG9lcyIsImEiOiJjbWFwazQxbDgwaXMzMmxwbzJmNmhidm0yIn0.NileAvzC_m2asZI3tLIqUw';
 
     const defaultCenter = [-71.245, 42.254],
-          defaultZoom   = 7.5,
+          defaultZoom   = 8,
           vectorLayerId = 'municipalitiesbycommunitytype-c8ks3h copy',
           tileField     = 'Municipali',
           geojsonField  = 'Municipality',
-          bounds        = [[-72.5,41.5],[-69.5,43.0]],
           geojsonURL    = './MunicipalitiesByCommunityType.geojson';
 
     let municipalitiesData = [],
         initialCamera;   // will store our exact starting view
 
-    // initialize the map
+    // initialize the map (no maxBounds so defaultZoom is reachable)
     const map = new mapboxgl.Map({
       container: 'map',
       style: 'mapbox://styles/20ahoes/cmb6rnzqp00rs01sddsqq9xtx',
       center: defaultCenter,
       zoom:   defaultZoom,
       minZoom: defaultZoom,
-      maxZoom: 22,
-      maxBounds: bounds
+      maxZoom: 22
     });
 
-    // whenever the iframe viewport size changes, recalculate map size
+    // ensure the map resizes if its container (iframe) changes
     window.addEventListener('resize', () => {
       if (map) map.resize();
     });
 
-    // once the style is loaded, capture our exact initial camera & set up layers
     map.on('load', () => {
+      // capture the exact initial camera once the map is ready
       initialCamera = {
         center:  map.getCenter().toArray(),
         zoom:    map.getZoom(),
@@ -78,11 +76,13 @@
         pitch:   map.getPitch()
       };
 
+      // load GeoJSON
       fetch(geojsonURL)
         .then(r => r.ok ? r.json() : Promise.reject(r.status))
         .then(data => municipalitiesData = data.features)
         .catch(err => console.error('GeoJSON load failed:', err));
 
+      // faded base layer
       map.addSource('municipalities-full', { type:'geojson', data:geojsonURL });
       map.addLayer({
         id: 'fade-layer', type: 'fill', source: 'municipalities-full',
@@ -90,6 +90,7 @@
         layout: { visibility: 'none' }
       });
 
+      // highlight layer
       map.addSource('highlight-town', {
         type: 'geojson',
         data: { type:'FeatureCollection', features:[] }
@@ -105,7 +106,7 @@
 
       document.getElementById('homeButton').onclick = clearSelection;
 
-      // click‐to‐select
+      // click-to-select towns
       map.on('click', vectorLayerId, e => {
         if (!municipalitiesData.length) return;
         const name = e.features[0].properties[tileField];
@@ -116,7 +117,7 @@
       });
     });
 
-    // helper to fly to a feature
+    // animate zoom into a selected feature (1000ms)
     function selectFeature(feature) {
       const coords = feature.geometry.type === 'MultiPolygon'
         ? feature.geometry.coordinates.flat(2)
@@ -127,6 +128,7 @@
       );
 
       map.fitBounds(bb, { padding:40, duration:1000 });
+
       map.setFilter('fade-layer',
         ['!=',['get',geojsonField],feature.properties[geojsonField]]
       );
@@ -141,17 +143,16 @@
       }, '*');
     }
 
-    // return to **exact** initial view
+    // animate zoom back to exact initial camera (1000ms)
     function clearSelection() {
       map.setLayoutProperty('fade-layer', 'visibility', 'none');
       map.getSource('highlight-town').setData({
         type:'FeatureCollection', features:[]
       });
 
-      // recalc size right away
+      // recalc size now that panel is gone
       map.resize();
 
-      // then ease back to the saved camera
       map.easeTo({
         center:  initialCamera.center,
         zoom:    initialCamera.zoom,
@@ -163,7 +164,7 @@
       window.parent.postMessage({ type:'clear-complete' }, '*');
     }
 
-    // listen for search / clear messages from the parent
+    // handle search/cancel messages from the parent
     window.addEventListener('message', e => {
       const msg = e.data;
       if (!municipalitiesData.length) return;
