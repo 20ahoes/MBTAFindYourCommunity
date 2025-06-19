@@ -6,19 +6,25 @@
   <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet"/>
   <style>
     html, body {
-      height: 100vh; margin: 0; padding: 0;
+      height: 100vh;
+      margin: 0;
+      padding: 0;
       font-family: 'Roboto', sans-serif;
     }
     #container {
       position: relative;
-      width: 100%; height: 100%;
+      width: 100%;
+      height: 100%;
     }
 
     /* -------- Intro Overlay -------- */
     #introOverlay {
-      position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+      position: absolute;
+      top: 0; left: 0; right: 0; bottom: 0;
       background: rgba(0,0,0,0.5);
-      display: flex; justify-content: center; align-items: center;
+      display: flex;
+      justify-content: center;
+      align-items: center;
       z-index: 100;
     }
     #introPopup {
@@ -52,7 +58,8 @@
 
     /* -------- Info Panel -------- */
     #infoPanel {
-      position: absolute; top: 0; left: -320px;
+      position: absolute;
+      top: 0; left: -320px;
       width: 320px; height: 100%;
       background: #fff;
       box-shadow: 2px 0 8px rgba(0,0,0,0.15);
@@ -67,23 +74,34 @@
       padding: 30px 20px 20px;
     }
     #townName {
-      font-size: 1.5em; margin: 0 0 12px;
+      font-size: 1.5em;
+      margin: 0 0 12px;
     }
     .small-info p {
-      margin: 6px 0; font-size: 1em; line-height: 1.4;
+      margin: 6px 0;
+      font-size: 1em;
+      line-height: 1.4;
     }
     .small-info .title {
-      color: navy; font-weight: 700; margin-right: 6px;
+      color: navy;
+      font-weight: 700;
+      margin-right: 6px;
     }
     .big-info {
       margin-top: 24px;
     }
     .big-info p {
-      margin: 10px 0; font-size: 1em; line-height: 1.4;
-      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+      margin: 10px 0;
+      font-size: 1em;
+      line-height: 1.4;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
     .big-info .title {
-      color: darkgreen; font-weight: 700; margin-right: 6px;
+      color: darkgreen;
+      font-weight: 700;
+      margin-right: 6px;
     }
 
     /* -------- Panel Close “×” -------- */
@@ -94,27 +112,33 @@
       background: none;
       border: none;
       outline: none;
-      font-size: 72px;      /* 3× the previous size */
+      font-size: 72px;      /* same size */
       line-height: 1;
-      font-weight: bold;
-      color: gray;          /* light gray */
+      font-weight: normal;   /* thinner weight */
+      color: gray;
       cursor: pointer;
     }
     #closePanel:hover {
-      color: #555;          /* slightly darker on hover */
+      color: #555;
     }
 
-    /* -------- Legend Styles -------- */
+    /* -------- Map‐side legend -------- */
     .legend {
       margin-top: 30px;
-      font-size: 0.9em; line-height: 1.5;
-      background: #fff; border: 1px solid #003f63;
-      border-radius: 6px; padding: 10px 12px;
+      font-size: 0.9em;
+      line-height: 1.5;
+      background: #fff;
+      border: 1px solid #003f63;
+      border-radius: 6px;
+      padding: 10px 12px;
       box-shadow: 0 2px 4px rgba(0,0,0,0.2);
     }
     .legend h3 {
-      margin: 0 0 8px; font-size: 1em;
-      text-align: center; color: #003f63; font-weight: 700;
+      margin: 0 0 8px;
+      font-size: 1em;
+      text-align: center;
+      color: #003f63;
+      font-weight: 700;
     }
     .legend-group {
       margin-top: 12px;
@@ -123,75 +147,86 @@
       margin-top: 18px;
     }
     .legend-title {
-      display: block; color: #003f63;
-      font-weight: 700; margin-bottom: 6px;
+      display: block;
+      color: #003f63;
+      font-weight: 700;
+      margin-bottom: 6px;
     }
     .legend-item {
-      display: flex; align-items: center; margin: 6px 0;
+      display: flex;
+      align-items: center;
+      margin: 6px 0;
     }
     .legend-item .patch {
-      width: 18px; height: 18px;
+      width: 18px;
+      height: 18px;
       border: 1px solid #fff;
       box-shadow: inset 0 0 0 1px #fff;
-      margin-right: 8px; flex-shrink: 0;
-    }
-
-    /* -------- Panel-side legend -------- */
-    #legendMap {
-      position: absolute; bottom: 20px; left: 20px;
-      z-index: 4; width: auto;
-    }
-    #container.info-open #legendMap {
-      display: none;
-    }
-    #legendPanel {
-      display: none;
-    }
-    #container.info-open #legendPanel {
-      display: block;
+      margin-right: 8px;
+      flex-shrink: 0;
     }
 
     /* -------- Main (search + map) -------- */
     #main {
-      position: absolute; top: 0; left: 0;
+      position: absolute;
+      top: 0; left: 0;
       width: 100%; height: 100%;
       transition: left 0.5s ease, width 0.5s ease;
     }
     #container.info-open #main {
-      left: 320px; width: calc(100% - 320px);
+      left: 320px;
+      width: calc(100% - 320px);
     }
 
     /* -------- Search bar -------- */
     .search-panel {
-      position: absolute; top: 0; left: 0; right: 0;
-      height: 60px; background: #f4f4f4;
-      display: flex; align-items: center;
-      padding: 0 20px; gap: 10px;
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 60px;
+      background: #f4f4f4;
+      display: flex;
+      align-items: center;
+      padding: 0 20px;
+      gap: 10px;
       box-shadow: 0 2px 4px rgba(0,0,0,0.1);
       z-index: 10;
     }
     .input-wrapper {
-      position: relative; flex: 1;
+      position: relative;
+      flex: 1;
     }
     .input-wrapper input {
-      width: 100%; padding: 8px 30px 8px 8px;
-      font-size: 16px; border: 1px solid #ccc; border-radius: 4px;
+      width: 100%;
+      padding: 8px 30px 8px 8px;
+      font-size: 16px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
       box-sizing: border-box;
     }
     .input-wrapper button#clearInput {
-      position: absolute; right: 8px; top: 50%;
+      position: absolute;
+      right: 8px;
+      top: 50%;
       transform: translateY(-50%);
-      background: none; border: none;
-      font-size: 16px; color: #888; cursor: pointer;
+      background: none;
+      border: none;
+      font-size: 16px;
+      color: #888;
+      cursor: pointer;
       display: none;
     }
     .input-wrapper button#clearInput:hover {
       color: #555;
     }
     .search-panel button#doSearch {
-      padding: 8px 16px; font-size: 16px; font-weight: 700;
-      background: #005e95; color: #fff;
-      border: none; border-radius: 4px; cursor: pointer;
+      padding: 8px 16px;
+      font-size: 16px;
+      font-weight: 700;
+      background: #005e95;
+      color: #fff;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
     }
     .search-panel button#doSearch:hover {
       background: #003f63;
@@ -201,7 +236,9 @@
     #mapFrame {
       position: absolute;
       top: 60px; left: 0; right: 0; bottom: 0;
-      border: none; width: 100%; height: calc(100% - 60px);
+      border: none;
+      width: 100%;
+      height: calc(100% - 60px);
     }
   </style>
 </head>
@@ -216,11 +253,24 @@
   </div>
 
   <div id="container">
+
+    <!-- Map‐side legend -->
     <div id="legendMap" class="legend">
       <h3>MBTA Communities</h3>
-      <!-- legend content… -->
+      <div class="legend-group">
+        <span class="legend-title">Community Types</span>
+        <div class="legend-item"><span class="patch" style="background:#2A6D93"></span>Rapid Transit</div>
+        <div class="legend-item"><span class="patch" style="background:#508EB1"></span>Commuter Rail</div>
+        <div class="legend-item"><span class="patch" style="background:#B4B474"></span>Adjacent community</div>
+        <div class="legend-item"><span class="patch" style="background:#E3E3B6"></span>Adjacent small town</div>
+      </div>
+      <div class="legend-group exempt">
+        <span class="legend-title">Exempt Communities</span>
+        <div class="legend-item"><span class="patch" style="background:#9C9C9C"></span>Exempt</div>
+      </div>
     </div>
 
+    <!-- Info panel -->
     <div id="infoPanel">
       <button id="closePanel" aria-label="Close">×</button>
       <div class="content">
@@ -233,13 +283,26 @@
           <p><span class="title">Community Type:</span><span id="commField"></span></p>
           <p><span class="title">Unit Capacity Requirement:</span><span id="unitField"></span></p>
         </div>
+
+        <!-- Panel‐side legend -->
         <div id="legendPanel" class="legend">
           <h3>MBTA Communities</h3>
-          <!-- panel legend content… -->
+          <div class="legend-group">
+            <span class="legend-title">Community Types</span>
+            <div class="legend-item"><span class="patch" style="background:#2A6D93"></span>Rapid Transit</div>
+            <div class="legend-item"><span class="patch" style="background:#508EB1"></span>Commuter Rail</div>
+            <div class="legend-item"><span class="patch" style="background:#B4B474"></span>Adjacent community</div>
+            <div class="legend-item"><span class="patch" style="background:#E3E3B6"></span>Adjacent small town</div>
+          </div>
+          <div class="legend-group exempt">
+            <span class="legend-title">Exempt Communities</span>
+            <div class="legend-item"><span class="patch" style="background:#9C9C9C"></span>Exempt</div>
+          </div>
         </div>
       </div>
     </div>
 
+    <!-- Main (search + map) -->
     <div id="main">
       <div class="search-panel">
         <div class="input-wrapper">
@@ -254,6 +317,7 @@
         title="Map View">
       </iframe>
     </div>
+
   </div>
 
   <script>
@@ -266,8 +330,10 @@
           btnClear  = document.getElementById('clearInput'),
           btnClose  = document.getElementById('closePanel');
 
+    // Hide intro overlay
     startBtn.addEventListener('click', () => intro.style.display = 'none');
 
+    // Clear panel & notify map
     function clearAll() {
       input.value = '';
       toggleClearIcon();
@@ -275,6 +341,7 @@
       mapFrame.contentWindow.postMessage({ type:'clear-request' }, '*');
     }
 
+    // Run search
     function runSearch() {
       const name = input.value.trim();
       if (!name) return;
@@ -300,11 +367,11 @@
       const msg = e.data;
       if (msg?.type === 'town-selected') {
         const p = msg.properties;
-        document.getElementById('townName').textContent  = p.Municipality   || 'N/A';
-        document.getElementById('areaField').textContent = p.MBTAStationMunicipaliti_Clip1_A || 'N/A';
-        document.getElementById('popField').textContent  = p.MBTAStationMunicipaliti_Clip1_P || 'N/A';
-        document.getElementById('commField').textContent = p.data0k5Yh_TableToExcel_ExcelT_2 || 'N/A';
-        document.getElementById('unitField').textContent = p.data0k5Yh_TableToExcel_ExcelT_3 || 'N/A';
+        document.getElementById('townName').textContent  = p.Municipality    || 'N/A';
+        document.getElementById('areaField').textContent = p.MBTAStationMunicipaliti_Clip1_A   || 'N/A';
+        document.getElementById('popField').textContent  = p.MBTAStationMunicipaliti_Clip1_P   || 'N/A';
+        document.getElementById('commField').textContent = p.data0k5Yh_TableToExcel_ExcelT_2   || 'N/A';
+        document.getElementById('unitField').textContent = p.data0k5Yh_TableToExcel_ExcelT_3   || 'N/A';
         container.classList.add('info-open');
       }
       else if (msg?.type === 'clear-complete') {
