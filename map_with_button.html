@@ -15,160 +15,24 @@
   <link href="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.css" rel="stylesheet"/>
 
   <style>
-    html, body { margin: 0; padding: 0; height: 100%; font-family: 'Roboto',sans-serif; }
-    #map { position:absolute; top:0; bottom:0; left:0; right:0; }
-    #homeButton {
-      position:absolute; top:10px; left:10px; z-index:2;
-      padding:10px 20px; font-size:16px; font-weight:700;
-      background:rgba(255,255,255,0.9); color:#005e95;
-      border:none; border-radius:8px; cursor:pointer;
-      box-shadow:0 2px 6px rgba(0,0,0,0.3); backdrop-filter:blur(4px);
+    html, body {
+      margin: 0; padding: 0; height: 100%;
+      font-family: 'Roboto', sans-serif;
     }
-    .material-icons { font-size:24px; }
+    #map {
+      position: absolute; top: 0; bottom: 0; left: 0; right: 0;
+    }
+    #homeButton {
+      position: absolute; top: 10px; left: 10px; z-index: 2;
+      padding: 10px 20px; font-size: 16px; font-weight: 700;
+      background: rgba(255,255,255,0.9); color: #005e95;
+      border: none; border-radius: 8px; cursor: pointer;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+      backdrop-filter: blur(4px);
+    }
+    .material-icons { font-size: 24px; }
   </style>
 </head>
 <body>
-  <button id="homeButton" title="Clear & Home">
-    <span class="material-icons">home</span>
-  </button>
-  <div id="map"></div>
 
-  <script>
-    mapboxgl.accessToken = 'pk.eyJ1IjoiMjBhaG9lciIsImEiOiJjbWFwazQxbDgwaXMzMmxwbzJmNmhidm0yIn0.NileAvzC_m2asZI3tLIqUw';
-
-    const defaultCenter = [-71.245, 42.254],
-          defaultZoom   = 7.6,
-          vectorLayerId = 'municipalitiesbycommunitytype-c8ks3h copy',
-          surveyLayerA  = 'townsurvey-shp-7bmdt',
-          surveyLayerB  = 'townsurvey-shp-7bmdt copy',
-          geojsonURL    = './MunicipalitiesByCommunityType.geojson';
-
-    let municipalitiesData = [], initialCamera;
-
-    const map = new mapboxgl.Map({
-      container: 'map',
-      style: 'mapbox://styles/20ahoes/cmb6rnzqp00rs01sddsqq9xtx',
-      center: defaultCenter,
-      zoom:   defaultZoom,
-      minZoom: defaultZoom,
-      maxZoom: 22
-    });
-
-    window.addEventListener('resize', () => map.resize());
-
-    map.on('load', () => {
-      // 1) Capture exact initial camera
-      initialCamera = {
-        center:  map.getCenter().toArray(),
-        zoom:    map.getZoom(),
-        bearing: map.getBearing(),
-        pitch:   map.getPitch()
-      };
-
-      // 2) Load your GeoJSON into an array
-      fetch(geojsonURL)
-        .then(r => r.ok ? r.json() : Promise.reject(r.status))
-        .then(data => municipalitiesData = data.features)
-        .catch(err => console.error('GeoJSON load failed:', err));
-
-      // 3) Add the faded base layer
-      map.addSource('municipalities-full', { type:'geojson', data:geojsonURL });
-      map.addLayer({
-        id: 'fade-layer', type:'fill', source:'municipalities-full',
-        paint:{'fill-color':'#888','fill-opacity':0.5},
-        layout:{ visibility:'none' }
-      });
-
-      // 4) Add the highlight layer
-      map.addSource('highlight-town', {
-        type:'geojson',
-        data:{ type:'FeatureCollection', features:[] }
-      });
-      map.addLayer({
-        id:'highlight-fill', type:'fill', source:'highlight-town',
-        paint:{'fill-color':'#FFEB3B','fill-opacity':0.8}
-      });
-      map.addLayer({
-        id:'highlight-line', type:'line', source:'highlight-town',
-        paint:{'line-color':'#FF9800','line-width':2}
-      });
-
-      // 5) Override the style’s built-in “min zoom = 8” on all three layers
-      [ vectorLayerId, surveyLayerA, surveyLayerB ].forEach(layerId => {
-        if (map.getLayer(layerId)) {
-          map.setLayerZoomRange(layerId, defaultZoom, 22);
-        }
-      });
-
-      // 6) Wire up your home button
-      document.getElementById('homeButton').onclick = clearSelection;
-
-      // 7) Click-to-select
-      map.on('click', vectorLayerId, e => {
-        if (!municipalitiesData.length) return;
-        const clicked = e.features[0].properties.Municipali.toLowerCase();
-        const match   = municipalitiesData.find(f =>
-          f.properties.Municipality.toLowerCase() === clicked
-        );
-        if (match) selectFeature(match);
-      });
-    });
-
-    // Zoom into a feature with a 1 s animation
-    function selectFeature(feature) {
-      const coords = feature.geometry.type==='MultiPolygon'
-        ? feature.geometry.coordinates.flat(2)
-        : feature.geometry.coordinates[0];
-      const bb = coords.reduce(
-        (b,c) => b.extend(c),
-        new mapboxgl.LngLatBounds()
-      );
-      map.fitBounds(bb, { padding:40, duration:1000 });
-      map.setFilter('fade-layer',
-        ['!=',['get','Municipality'],feature.properties.Municipality]
-      );
-      map.setLayoutProperty('fade-layer','visibility','visible');
-      map.getSource('highlight-town').setData({
-        type:'FeatureCollection', features:[feature]
-      });
-      window.parent.postMessage({
-        type:'town-selected',
-        properties: feature.properties
-      }, '*');
-    }
-
-    // Zoom back out to the exact initial camera over 1 s
-    function clearSelection() {
-      map.setLayoutProperty('fade-layer','visibility','none');
-      map.getSource('highlight-town').setData({
-        type:'FeatureCollection', features:[]
-      });
-      map.resize();
-      map.easeTo({
-        center:  initialCamera.center,
-        zoom:    initialCamera.zoom,
-        bearing: initialCamera.bearing,
-        pitch:   initialCamera.pitch,
-        duration: 1000
-      });
-      window.parent.postMessage({ type:'clear-complete' }, '*');
-    }
-
-    // Listen for search/cancel from the parent
-    window.addEventListener('message', e => {
-      const msg = e.data;
-      if (!municipalitiesData.length) return;
-      if (msg?.type === 'search-town') {
-        const term = msg.name.trim().toLowerCase();
-        const match = municipalitiesData.find(f =>
-          f.properties.Municipality.toLowerCase() === term
-        );
-        if (match) selectFeature(match);
-      }
-      else if (msg?.type === 'clear-request') {
-        clearSelection();
-      }
-    });
-  </script>
-</body>
-</html>
+  <button id="homeButton" title="Clear &
